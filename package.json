@@ -1,18 +1,20 @@
 {
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.6.2"
+    "socket.io": "^4.6.2",
+    "webpack": "^5.86.0",
+    "three": "^0.153.0",
+    "cannon":"^0.6.2"
   }, 
   "name": "server",
   "version": "1.0.0",
-  "description": "A io game in development",
+  "description": "An .io game currently in development",
   "main": "server.js",
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "2.0.22"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "nodemon src/server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +25,6 @@
     "game",
     "hactory.io"
   ],
-  "author": "Rowan Whelan",
+  "author": "Rowan Whelan, Amerigo Tesoro",
   "license": "GPLv3"
 }
