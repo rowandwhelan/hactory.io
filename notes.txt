@@ -7,3 +7,5 @@ ls = check inside folder
 
 TODO:
 Remove old three.js stuff 
+
+three js works
