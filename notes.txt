@@ -1,0 +1,9 @@
+
+cmd commands
+pwd = path to working directory
+cd.. = go out
+cd whatever = to go to whatever
+ls = check inside folder
+
+TODO:
+Remove old three.js stuff 
