@@ -1,13 +1,93 @@
 import './main.css'
 import * as THREE from 'three'
+//import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+
+//import background from '../img/background.jpg'
+import stars from '../img/stars.jpg'
+
 //Scene
 const scene = new THREE.Scene()
+
 //Red Cube
 const geometry = new THREE.BoxGeometry(1,1,1)
-const material = new THREE.MeshBasicMaterial({color: 0xff0000})
-const mesh = new THREE.Mesh(geometry, material)
-mesh.position.set(0,0,0)
-scene.add(mesh)
+const material = new THREE.MeshBasicMaterial({
+    color: 0xff0000
+})
+const cube = new THREE.Mesh(geometry, material)
+cube.position.set(0,0,0)
+scene.add(cube)
+
+//Sphere
+const sphereGeometry = new THREE.SphereGeometry(4, 50, 50)
+const sphereMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0000FF,
+    wireframe: false
+})
+const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
+scene.add(sphere)
+sphere.position.set(-10,0,-10)
+sphere.castShadow = true
+
+//Plane
+const planeGeometry = new THREE.PlaneGeometry(30,30)
+const planeMaterial = new THREE.MeshStandardMaterial({
+    color: 0xFFFFFF,
+    side: THREE.DoubleSide
+})
+const plane = new THREE.Mesh(planeGeometry, planeMaterial)
+scene.add(plane)
+plane.rotation.x = -0.5 * Math.PI
+plane.receiveShadow = true
+
+//Grid
+const gridHelper = new THREE.GridHelper(30, 60)
+scene.add(gridHelper)
+
+//Ambient Light
+const ambientLight = new THREE.AmbientLight(0x333333)
+scene.add(ambientLight)
+
+//Directional Light
+const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.8)
+scene.add(directionalLight)
+directionalLight.position.set(-30, 50, 0)
+directionalLight.castShadow = true
+//the shadows only appear if they are inside the shadow area defined below
+directionalLight.shadow.camera.bottom = -12
+directionalLight.shadow.camera.left = -20
+
+//Directional Light Helper
+const dLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5)
+scene.add(dLightHelper)
+
+//Directional Light Shadow Helper
+const dLightShadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera)
+scene.add(dLightShadowHelper)
+
+//Spotlight
+const spotlight = new THREE.SpotLight(0xFFFFFF)
+scene.add(spotlight)
+spotlight.position.set(-100, 100, 0)
+spotlight.castShadow = true
+//higher angle produces pixelated shadows
+spotlight.angle = 0.2
+//blurred edges
+spotlight.penumbra = 0
+//brightness/opacity
+spotlight.intensity = 1
+
+//Spotlight Helper
+const sLightHelper = new THREE.SpotLightHelper(spotlight)
+scene.add(sLightHelper)
+
+//Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
+scene.fog = new THREE.Fog(0xFFFFFF, 0, 200)
+
+//Textures
+const textureLoader = new THREE.TextureLoader()
+scene.background = textureLoader.load(stars)
+
 
 //Viewport sizes
 const sizes = {
@@ -17,11 +97,9 @@ const sizes = {
 //camera yay :)
 /*Numbers are: fov (vertical), viewport width / viewport height, near cutoff, far distance cutoff --
 -- (wont be rendered if that far away) (dont use extreme values to prevent z fighting) */
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000)
 //position
-camera.position.x = 0
-camera.position.y = 0
-camera.position.z = 3
+camera.position.set(0,0,3)
 scene.add(camera)
 
 
@@ -32,10 +110,25 @@ const renderer = new THREE.WebGLRenderer({
     canvas
 })
 renderer.setSize(sizes.width, sizes.height)
+//renderer.setClearColor('skyblue')
+renderer.shadowMap.enabled = true
 
+//Controls
+//const controls = new THREE.PointerLockControls( camera, renderer.domElement)
+//controls.update()
+
+//every time the spotlight changes the helper must too
+sLightHelper.update()
+
+const orbit = new OrbitControls(camera, renderer.domElement)
+orbit.update()
 
 //time
 let time = Date.now()
+
+//Sphere Bounce 
+let step = 0
+let speed = 0.01
 
 //animation
 const tick = () => {
@@ -44,13 +137,14 @@ const tick = () => {
     const currentTime = Date.now()
     const deltaTime = currentTime - time
     time = currentTime
+    //delta time is basiclly miliseconds per frame
 
 
+    //Update objects
+    cube.rotation.y += 0.001 * deltaTime
 
-   //Update objects
-   mesh.rotation.y += 0.001 * deltaTime
-
-   console.log(deltaTime)
+    step += speed
+    sphere.position.y = 10 * Math.abs(Math.sin(step))
 
     //Render
     renderer.render(scene, camera)
@@ -58,9 +152,6 @@ const tick = () => {
     window.requestAnimationFrame(tick)
 }
 tick()
-
-
-
 
 
 /*
