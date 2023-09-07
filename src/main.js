@@ -3,20 +3,54 @@ import * as THREE from 'three'
 //import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-//import background from '../img/background.jpg'
-import stars from '../img/stars.jpg'
+import nebula from './nebula.jpg'
+import stars from './stars.jpg'
 
 //Scene
 const scene = new THREE.Scene()
 
-//Red Cube
-const geometry = new THREE.BoxGeometry(1,1,1)
-const material = new THREE.MeshBasicMaterial({
+//Textures
+const textureLoader = new THREE.TextureLoader()
+//scene.background = textureLoader.load(stars)
+const cubeTextureLoader = new THREE.CubeTextureLoader()
+scene.background = cubeTextureLoader.load([
+    nebula,
+    stars,
+    nebula,
+    nebula,
+    stars,
+    stars
+])
+
+//Cube 1#
+const cube1geometry = new THREE.BoxGeometry(1,1,1)
+const cube1material = new THREE.MeshBasicMaterial({
     color: 0xff0000
 })
-const cube = new THREE.Mesh(geometry, material)
-cube.position.set(0,0,0)
-scene.add(cube)
+const cube1 = new THREE.Mesh(cube1geometry, cube1material)
+cube1.position.set(0,0,0)
+scene.add(cube1)
+
+//Multimaterial box
+const cube2MultiMaterial = [
+    new THREE.MeshBasicMaterial({map: textureLoader.load(nebula)}),
+    new THREE.MeshBasicMaterial({map: textureLoader.load(nebula)}),
+    new THREE.MeshBasicMaterial({map: textureLoader.load(stars)}),
+    new THREE.MeshBasicMaterial({map: textureLoader.load(nebula)}),
+    new THREE.MeshBasicMaterial({map: textureLoader.load(stars)}),
+    new THREE.MeshBasicMaterial({map: textureLoader.load(nebula)})
+]
+
+//Cube 2#
+const cube2Geometry = new THREE.BoxGeometry(3,3,3)
+const cube2Material = new THREE.MeshBasicMaterial({
+    map: textureLoader.load(nebula)
+})
+const cube2 = new THREE.Mesh(cube2Geometry, cube2MultiMaterial)
+scene.add(cube2)
+cube2.position.set(0,15,10)
+cube2.name = 'cube2'
+
 
 //Sphere
 const sphereGeometry = new THREE.SphereGeometry(4, 50, 50)
@@ -28,6 +62,7 @@ const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
 scene.add(sphere)
 sphere.position.set(-10,0,-10)
 sphere.castShadow = true
+const sphereId = sphere.id
 
 //Plane
 const planeGeometry = new THREE.PlaneGeometry(30,30)
@@ -84,11 +119,6 @@ scene.add(sLightHelper)
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
 scene.fog = new THREE.Fog(0xFFFFFF, 0, 200)
 
-//Textures
-const textureLoader = new THREE.TextureLoader()
-scene.background = textureLoader.load(stars)
-
-
 //Viewport sizes
 const sizes = {
     width: window.innerWidth,
@@ -101,6 +131,16 @@ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 
 //position
 camera.position.set(0,0,3)
 scene.add(camera)
+
+//Clicking and normalized mouse position
+const mousePosition = new THREE.Vector2()
+window.addEventListener('mousemove', function(e){
+    mousePosition.x = (e.clientX / window.innerWidth) * 2 - 1
+    mousePosition.y = - (e.clientY / window.innerHeight) * 2 + 1
+})
+
+const rayCaster = new THREE.Raycaster()
+
 
 
 //renderer
@@ -141,10 +181,24 @@ const tick = () => {
 
 
     //Update objects
-    cube.rotation.y += 0.001 * deltaTime
+    cube1.rotation.y += 0.001 * deltaTime
 
     step += speed
     sphere.position.y = 10 * Math.abs(Math.sin(step))
+
+    //Mouse
+    rayCaster.setFromCamera(mousePosition, camera)
+    const intersects = rayCaster.intersectObjects(scene.children)
+    console.log(intersects)
+
+    for(let i = 0; i < intersects.length; i++) {
+        if(intersects[i].object.id === sphereId) 
+            intersects[i].object.material.color.set(0xFF0000)
+        if(intersects[i].object.name === 'cube2') {
+            intersects[i].object.rotation.x += 0.001 * deltaTime
+        }
+    }
+
 
     //Render
     renderer.render(scene, camera)
