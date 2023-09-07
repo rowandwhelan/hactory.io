@@ -12,7 +12,16 @@
 
 <body>
   <canvas class = 'webgl'></canvas>
-
+  <script id = "vertexShader" type = "vertex">
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+  </script>
+  <script id = "fragmentShader" type = "fragment">
+    void main() {
+      gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+  }
+  </script>
   <script type= "module" src="./main.js"></script>
   
   <!-- 

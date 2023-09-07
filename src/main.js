@@ -2,9 +2,12 @@ import './main.css'
 import * as THREE from 'three'
 //import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import nebula from './nebula.jpg'
 import stars from './stars.jpg'
+
+const monkeyUrl = new URL('./monkey.glb', import.meta.url)
 
 //Scene
 const scene = new THREE.Scene()
@@ -21,6 +24,16 @@ scene.background = cubeTextureLoader.load([
     stars,
     stars
 ])
+
+//Asset loader
+const assetLoader = new GLTFLoader()
+assetLoader.load(monkeyUrl.href, function(gltf) {
+    const model = gltf.scene
+    scene.add(model)
+    model.position.set(-12, 4, 10)
+}, undefined, function(error) {
+    console.error(error)
+})
 
 //Cube 1#
 const cube1geometry = new THREE.BoxGeometry(1,1,1)
@@ -64,6 +77,29 @@ sphere.position.set(-10,0,-10)
 sphere.castShadow = true
 const sphereId = sphere.id
 
+/*Shaders? (mystery code)
+const vShader = `
+    void main() {
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`
+const fShader = `
+    void main() {
+        gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+    }
+`
+*/
+
+//Sphere 2 
+const sphere2Geometry = new THREE.SphereGeometry(4)
+const sphere2Material = new THREE.ShaderMaterial({
+    vertexShader: document.getElementById('vertexShader').textContent,
+    fragmentShader: document.getElementById('fragmentShader').textContent
+})
+const sphere2 = new THREE.Mesh(sphere2Geometry, sphere2Material)
+scene.add(sphere2)
+sphere2.position.set(-5,10,10)
+
 //Plane
 const planeGeometry = new THREE.PlaneGeometry(30,30)
 const planeMaterial = new THREE.MeshStandardMaterial({
@@ -78,6 +114,16 @@ plane.receiveShadow = true
 //Grid
 const gridHelper = new THREE.GridHelper(30, 60)
 scene.add(gridHelper)
+
+//Plane 2
+const plane2Geometry = new THREE.PlaneGeometry(10, 10, 100, 100)
+const plane2Material = new THREE.MeshBasicMaterial({
+    color: 0xFFFFFF,
+    wireframe: true
+})
+const plane2 = new THREE.Mesh(plane2Geometry, plane2Material)
+scene.add(plane2)
+plane2.position.set(10,10,15)
 
 //Ambient Light
 const ambientLight = new THREE.AmbientLight(0x333333)
@@ -141,8 +187,6 @@ window.addEventListener('mousemove', function(e){
 
 const rayCaster = new THREE.Raycaster()
 
-
-
 //renderer
 const canvas = document.querySelector('.webgl')
 
@@ -189,7 +233,6 @@ const tick = () => {
     //Mouse
     rayCaster.setFromCamera(mousePosition, camera)
     const intersects = rayCaster.intersectObjects(scene.children)
-    console.log(intersects)
 
     for(let i = 0; i < intersects.length; i++) {
         if(intersects[i].object.id === sphereId) 
@@ -199,6 +242,9 @@ const tick = () => {
         }
     }
 
+    //Grid vertex changes
+    plane2.geometry.attributes.position.array[(Math.floor(((plane2.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random()/10)
+    plane2.geometry.attributes.position.needsUpdate = true
 
     //Render
     renderer.render(scene, camera)
