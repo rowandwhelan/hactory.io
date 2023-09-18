@@ -15,7 +15,6 @@ import posx from '../public/assets/skybox/posx.jpg'
 import posy from '../public/assets/skybox/posy.jpg'
 import posz from '../public/assets/skybox/posz.jpg'
 
-
 /**
  * Base
  */
@@ -44,14 +43,13 @@ scene.background = cubeTextureLoader.load([
 //Asset loader
 const assetLoader = new GLTFLoader()
 
-
 /*
 //Import Blender Stuff
 const monkeyUrl = new URL('../public/assets/monkey.glb', import.meta.url)
 assetLoader.load(monkeyUrl.href, function (gltf) {
     const model = gltf.scene
     scene.add(model)
-    model.position.set(-12, 4, 10)
+    model.position.set(0, 0, 0)
 }, undefined, function (error) {
     console.error(error)
 })
@@ -137,24 +135,13 @@ box3Mesh.castShadow = true
 box3Mesh.position.set(new CANNON.Vec3(1, 20, 0))
 scene.add(box3Mesh)
 
-const environmentMapTexture = cubeTextureLoader.load([
-    './nebula.jpg',
-    './stars.jpg',
-    './nebula.jpg',
-    './nebula.jpg',
-    './stars.jpg',
-    './stars.jpg'
-])
-
 //Sphere 3
 const sphere3Geo = new THREE.SphereGeometry(2)
 const sphere3Mat = new THREE.MeshStandardMaterial({
     color: 0x00ff00,
     wireframe: false,
     metalness: 0.3,
-    roughness: 0.4,
-    envMap: environmentMapTexture,
-    envMapIntensity: 0.5
+    roughness: 0.4
 })
 const sphere3Mesh = new THREE.Mesh(sphere3Geo, sphere3Mat)
 sphere3Mesh.castShadow = true
@@ -168,9 +155,7 @@ const groundMat = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide,
     wireframe: false,
     metalness: 0.3,
-    roughness: 0.4,
-    envMap: environmentMapTexture,
-    envMapIntensity: 0.5
+    roughness: 0.4
 })
 const groundMesh = new THREE.Mesh(groundGeo, groundMat)
 groundMesh.receiveShadow = true
