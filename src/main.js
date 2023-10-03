@@ -1,8 +1,8 @@
 import './main.css'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-//import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { PointerLockControlsCannon } from './PointerLockControlsCannon.js'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import nebula from '../public/assets/nebula.jpg'
@@ -32,12 +32,12 @@ const textureLoader = new THREE.TextureLoader()
 const cubeTextureLoader = new THREE.CubeTextureLoader()
 
 scene.background = cubeTextureLoader.load([
-    posx,
-    negx,
-    posy,
-    negy,
-    posz,
-    negz
+  posx,
+  negx,
+  posy,
+  negy,
+  posz,
+  negz
 ])
 
 //Asset loader
@@ -57,78 +57,19 @@ assetLoader.load(monkeyUrl.href, function (gltf) {
 
 //Multimaterial Box
 const box2MultiMaterial = [
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(stars) }),
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(stars) }),
-    new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) })
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(stars) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(stars) }),
+  new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) })
 ]
-
-/**
- * Object Templates
- */
-//Simple Box Maker
-const boxGeo = new THREE.BoxGeometry(1, 1, 1)
-const boxMat = new THREE.MeshBasicMaterial({
-    color: 0xff0000
-})
-const box = new THREE.Mesh(boxGeo, boxMat)
-box.position.set(0, 0, 0)
-box.castShadow = true
-//scene.add(box)
-
-//Multimaterial Advanced Box
-const box2Geo = new THREE.BoxGeometry(3, 3, 3)
-const box2Mat = new THREE.MeshBasicMaterial({})
-const box2 = new THREE.Mesh(box2Geo, box2MultiMaterial)
-box2.position.set(0, 15, 10)
-box2.castShadow = true
-box2.receiveShadow = true
-const box2Id = box2.id
-//scene.add(box2)
-
-//Sphere Maker
-const sphereGeometry = new THREE.SphereGeometry(1, 20, 20)
-const sphereMaterial = new THREE.MeshStandardMaterial({
-    color: 0x0000FF
-})
-const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
-sphere.position.set(0, 0, 0)
-sphere.castShadow = true
-sphere.receiveShadow = true
-//scene.add(sphere)
-
-//Advanced Sphere Maker (with shaders)
-const sphere2Geometry = new THREE.SphereGeometry(1, 20, 20)
-const sphere2Material = new THREE.ShaderMaterial({
-    vertexShader: document.getElementById('vertexShader').textContent,
-    fragmentShader: document.getElementById('fragmentShader').textContent
-})
-const sphere2 = new THREE.Mesh(sphere2Geometry, sphere2Material)
-sphere2.position.set(0, 0, 0)
-sphere2.castShadow = true
-sphere2.receiveShadow = true
-const sphere2Id = sphere2.id
-//scene.add(sphere2)
-
-//Plane Maker
-const planeGeo = new THREE.PlaneGeometry(10, 10, 30, 30)
-const planeMat = new THREE.MeshStandardMaterial({
-    color: 0xFFFFFF,
-    side: THREE.DoubleSide
-})
-const plane = new THREE.Mesh(planeGeo, planeMat)
-plane.rotation.x = -0.5 * Math.PI
-plane.position.set(10, 10, 15)
-plane.receiveShadow = true
-//scene.add(plane)
 
 //Box 3#
 const box3Geo = new THREE.BoxGeometry(2, 2, 2)
 const box3Mat = new THREE.MeshStandardMaterial({
-    color: 0x00ff00,
-    wireframe: false
+  color: 0x00ff00,
+  wireframe: false
 })
 const box3Mesh = new THREE.Mesh(box3Geo, box3Mat)
 box3Mesh.castShadow = true
@@ -138,10 +79,10 @@ scene.add(box3Mesh)
 //Sphere 3
 const sphere3Geo = new THREE.SphereGeometry(2)
 const sphere3Mat = new THREE.MeshStandardMaterial({
-    color: 0x00ff00,
-    wireframe: false,
-    metalness: 0.3,
-    roughness: 0.4
+  color: 0x00ff00,
+  wireframe: false,
+  metalness: 0.3,
+  roughness: 0.4
 })
 const sphere3Mesh = new THREE.Mesh(sphere3Geo, sphere3Mat)
 sphere3Mesh.castShadow = true
@@ -151,11 +92,11 @@ scene.add(sphere3Mesh)
 //Ground
 const groundGeo = new THREE.PlaneGeometry(30, 30)
 const groundMat = new THREE.MeshStandardMaterial({
-    color: 0xFFFFFF,
-    side: THREE.DoubleSide,
-    wireframe: false,
-    metalness: 0.3,
-    roughness: 0.4
+  color: 0xFFFFFF,
+  side: THREE.DoubleSide,
+  wireframe: false,
+  metalness: 0.3,
+  roughness: 0.4
 })
 const groundMesh = new THREE.Mesh(groundGeo, groundMat)
 groundMesh.receiveShadow = true
@@ -163,7 +104,7 @@ scene.add(groundMesh)
 
 //Physics 
 const world = new CANNON.World({
-    gravity: new CANNON.Vec3(0, -9.81, 0)
+  gravity: new CANNON.Vec3(0, -9.81, 0)
 })
 
 //Ground Cannon.js Material 
@@ -171,11 +112,11 @@ const groundPhysMat = new CANNON.Material()
 
 //Ground Hitbox
 const groundBody = new CANNON.Body({
-    //shape: new CANNON.Plane(),
-    shape: new CANNON.Box(new CANNON.Vec3(15, 15, 0.1)),
-    //mass: 10
-    type: CANNON.Body.STATIC,
-    material: groundPhysMat
+  //shape: new CANNON.Plane(),
+  shape: new CANNON.Box(new CANNON.Vec3(15, 15, 0.1)),
+  //mass: 10
+  type: CANNON.Body.STATIC,
+  material: groundPhysMat
 
 })
 world.addBody(groundBody)
@@ -187,10 +128,10 @@ const boxPhysMat = new CANNON.Material()
 
 //box 3 hitbox
 const boxBody = new CANNON.Body({
-    mass: 1,
-    shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
-    position: new CANNON.Vec3(5, 20, 0),
-    material: boxPhysMat
+  mass: 1,
+  shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
+  position: new CANNON.Vec3(5, 20, 0),
+  material: boxPhysMat
 })
 world.addBody(boxBody)
 
@@ -199,9 +140,9 @@ boxBody.angularDamping = 0.5
 
 //Ground-Box 3 Collision Cannon.js Materials
 const groundBoxContactMat = new CANNON.ContactMaterial(
-    groundPhysMat,
-    boxPhysMat,
-    { friction: 0 }
+  groundPhysMat,
+  boxPhysMat,
+  { friction: 0 }
 )
 
 world.addContactMaterial(groundBoxContactMat)
@@ -211,18 +152,18 @@ const spherePhysMat = new CANNON.Material()
 
 //sphere 3 hitbox
 const sphere3Body = new CANNON.Body({
-    mass: 1,
-    shape: new CANNON.Sphere(2),
-    position: new CANNON.Vec3(0, 15, 0),
-    material: spherePhysMat
+  mass: 1,
+  shape: new CANNON.Sphere(2),
+  position: new CANNON.Vec3(0, 15, 0),
+  material: spherePhysMat
 })
 world.addBody(sphere3Body)
 
 //Sphere 3  bouncyness
 const groundSphereContactMat = new CANNON.ContactMaterial(
-    groundPhysMat,
-    spherePhysMat,
-    { restitution: 0.9 }
+  groundPhysMat,
+  spherePhysMat,
+  { restitution: 0.9 }
 )
 
 world.addContactMaterial(groundSphereContactMat)
@@ -231,11 +172,12 @@ world.addContactMaterial(groundSphereContactMat)
 sphere3Body.linearDamping = 0.31
 
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
-scene.fog = new THREE.Fog(0xFFFFFF, 0, 200)
+scene.fog = new THREE.Fog(0xFFFFFF, 0, 300)
 
 /**
  * Lights
  */
+
 //Ambient Light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
 scene.add(ambientLight)
@@ -250,7 +192,7 @@ directionalLight.shadow.camera.left = - dLightSize
 directionalLight.shadow.camera.top = dLightSize
 directionalLight.shadow.camera.right = dLightSize
 directionalLight.shadow.camera.bottom = - dLightSize
-directionalLight.position.set(10, 10, 10)
+directionalLight.position.set(-5, 15, 10)
 scene.add(directionalLight)
 
 /*
@@ -263,52 +205,148 @@ scene.add(dLightShadowHelper)
 dLightShadowHelper.update()
 */
 
-//Viewport sizes
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
-window.addEventListener('resize', () => {
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-
 //Camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000)
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
 //position
 camera.position.set(0, 15, 0)
 scene.add(camera)
 
-//Clicking and normalized mouse position
-const mousePosition = new THREE.Vector2()
-window.addEventListener('mousemove', function (e) {
-    mousePosition.x = (e.clientX / window.innerWidth) * 2 - 1
-    mousePosition.y = - (e.clientY / window.innerHeight) * 2 + 1
-})
+const objects = []
 
-const rayCaster = new THREE.Raycaster()
+//Placeholder Block
+const placeholderGeo = new THREE.BoxGeometry(5, 5, 5);
+const placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+const placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial);
+scene.add(placeholderMesh);
+
+const map = new THREE.TextureLoader().load(nebula);
+const cubeGeo = new THREE.BoxGeometry(5, 5, 5);
+const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map });
+
+const grid4Helper = new THREE.GridHelper(100, 20);
+scene.add(grid4Helper);
+
+const plane4Geometry = new THREE.PlaneGeometry(100, 100);
+plane4Geometry.rotateX(- Math.PI / 2);
+
+const plane4 = new THREE.Mesh(plane4Geometry, new THREE.MeshBasicMaterial({ visible: false }));
+scene.add(plane4);
+
+objects.push(plane4);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let isShiftDown = false
+
+document.addEventListener( 'pointermove', onPointerMove );
+document.addEventListener( 'pointerdown', onPointerDown );
+document.addEventListener( 'keydown', onDocumentKeyDown );
+document.addEventListener( 'keyup', onDocumentKeyUp );
+
+function onPointerMove(event) {
+
+  pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+
+  raycaster.setFromCamera(pointer, camera);
+
+  const intersects = raycaster.intersectObjects(objects, false);
+
+  if (intersects.length > 0) {
+
+    const intersect = intersects[0];
+
+    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal);
+    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5);
+
+    renderer.render(scene, camera)
+
+  }
+
+}
+
+function onPointerDown(event) {
+
+  pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+
+  raycaster.setFromCamera(pointer, camera);
+
+  const intersects = raycaster.intersectObjects(objects, false);
+
+  if (intersects.length > 0) {
+
+    const intersect = intersects[0];
+
+    // delete cube
+
+    if (isShiftDown) {
+
+      if (intersect.object !== plane) {
+
+        scene.remove(intersect.object);
+
+        objects.splice(objects.indexOf(intersect.object), 1);
+
+      }
+
+      // create cube
+
+    } else {
+
+      const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
+      voxel.position.copy(intersect.point).add(intersect.face.normal);
+      voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5);
+      scene.add(voxel);
+
+      objects.push(voxel);
+
+    }
+
+    renderer.render(scene, camera)
+
+  }
+
+}
+
+function onDocumentKeyDown(event) {
+
+  switch (event.keyCode) {
+
+    case 16: isShiftDown = true; break;
+
+  }
+
+}
+
+function onDocumentKeyUp(event) {
+
+  switch (event.keyCode) {
+
+    case 16: isShiftDown = false; break;
+
+  }
+
+}
+
+// Create the user collision
+const playerShapeHalfExtents = new CANNON.Vec3(2, 4, 2)
+const playerShape = new CANNON.Box(playerShapeHalfExtents)
+const playerBody = new CANNON.Body({ mass: 5, shape: playerShape, linearDamping: 0.9 })
+playerBody.position.set(0, 10, 0)
+world.addBody(playerBody)
+
+const controls = new PointerLockControlsCannon(camera, playerBody)
+scene.add(controls.getObject())
 
 /**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
+  canvas: canvas
 })
 renderer.shadowMap.enabled = true
 //higher quality shadows
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
-renderer.setSize(sizes.width, sizes.height)
+renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 const orbit = new OrbitControls(camera, renderer.domElement)
@@ -323,48 +361,46 @@ const timeStep = 1 / 60
 //animation
 const tick = () => {
 
-    //current time
-    const currentTime = Date.now()
-    const deltaTime = currentTime - time
-    time = currentTime
-    //delta time is basiclly miliseconds per frame
+  //current time
+  const currentTime = Date.now()
+  const deltaTime = currentTime - time
+  time = currentTime
+  //delta time is miliseconds per frame
 
-    //Update objects (empty currently)
+  //Grid vertex changes
+  //plane.geometry.attributes.position.array[(Math.floor(((plane.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random() / 10)
+  //plane.geometry.attributes.position.needsUpdate = true
 
-    //Mouse
-    rayCaster.setFromCamera(mousePosition, camera)
-    const intersects = rayCaster.intersectObjects(scene.children)
-    /*
-        for (let i = 0; i < intersects.length; i++) {
-            if (intersects[i].object.id === sphereId)
-                intersects[i].object.material.color.set(0xFF0000)
-            if (intersects[i].object.id === box2Id) {
-                intersects[i].object.rotation.x += 0.001 * deltaTime
-            }
-        }
-    */
-    //Grid vertex changes
-    //plane.geometry.attributes.position.array[(Math.floor(((plane.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random() / 10)
-    //plane.geometry.attributes.position.needsUpdate = true
+  //Physics
+  world.step(timeStep)
 
-    //Physics
-    world.step(timeStep)
+  //Ground Mesh Merge
+  groundMesh.position.copy(groundBody.position)
+  groundMesh.quaternion.copy(groundBody.quaternion)
 
-    //Ground Mesh Merge
-    groundMesh.position.copy(groundBody.position)
-    groundMesh.quaternion.copy(groundBody.quaternion)
+  //Cube 3 Mesh Merge
+  box3Mesh.position.copy(boxBody.position)
+  box3Mesh.quaternion.copy(boxBody.quaternion)
 
-    //Cube 3 Mesh Merge
-    box3Mesh.position.copy(boxBody.position)
-    box3Mesh.quaternion.copy(boxBody.quaternion)
+  //Sphere 3 Mesh Merge
+  sphere3Mesh.position.copy(sphere3Body.position)
+  sphere3Mesh.quaternion.copy(sphere3Body.quaternion)
 
-    //Sphere 3 Mesh Merge
-    sphere3Mesh.position.copy(sphere3Body.position)
-    sphere3Mesh.quaternion.copy(sphere3Body.quaternion)
+  //Render
+  renderer.render(scene, camera)
 
-    //Render
-    renderer.render(scene, camera)
-
-    window.requestAnimationFrame(tick)
+  window.requestAnimationFrame(tick)
 }
 tick()
+
+window.addEventListener('resize', () => {
+
+  // Update camera
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+
+  // Update renderer
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.render(scene, camera)
+})
