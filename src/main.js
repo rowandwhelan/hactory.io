@@ -7,6 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import nebula from '../public/assets/nebula.jpg'
 import stars from '../public/assets/stars.jpg'
+import stone from '../public/assets/HactoryStone.png'
 
 import negx from '../public/assets/skybox/negx.jpg'
 import negy from '../public/assets/skybox/negy.jpg'
@@ -219,7 +220,7 @@ const placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opaci
 const placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial);
 scene.add(placeholderMesh);
 
-const map = new THREE.TextureLoader().load(nebula);
+const map = new THREE.TextureLoader().load(stone);
 const cubeGeo = new THREE.BoxGeometry(5, 5, 5);
 const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map });
 
@@ -235,19 +236,20 @@ scene.add(plane4);
 objects.push(plane4);
 
 const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
+const mouse = new THREE.Vector2();
 let isShiftDown = false
 
-document.addEventListener( 'pointermove', onPointerMove );
-document.addEventListener( 'pointerdown', onPointerDown );
-document.addEventListener( 'keydown', onDocumentKeyDown );
-document.addEventListener( 'keyup', onDocumentKeyUp );
+document.addEventListener( 'mousemove', onMouseMove );
+document.addEventListener( 'mousedown', onMouseDown );
+document.addEventListener( 'keydown', onkeydown );
+document.addEventListener( 'keyup', onkeyup );
 
-function onPointerMove(event) {
+//move this outside a function, should continuously running
+function onMouseMove(event) {
 
-  pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
 
-  raycaster.setFromCamera(pointer, camera);
+  raycaster.setFromCamera(mouse, camera);
 
   const intersects = raycaster.intersectObjects(objects, false);
 
@@ -264,11 +266,11 @@ function onPointerMove(event) {
 
 }
 
-function onPointerDown(event) {
+function onMouseDown(event) {
 
-  pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
 
-  raycaster.setFromCamera(pointer, camera);
+  raycaster.setFromCamera(mouse, camera);
 
   const intersects = raycaster.intersectObjects(objects, false);
 
@@ -278,9 +280,9 @@ function onPointerDown(event) {
 
     // delete cube
 
-    if (isShiftDown) {
+    if (event.button == 2) {
 
-      if (intersect.object !== plane) {
+      if (intersect.object !== plane4) {
 
         scene.remove(intersect.object);
 
@@ -302,26 +304,6 @@ function onPointerDown(event) {
     }
 
     renderer.render(scene, camera)
-
-  }
-
-}
-
-function onDocumentKeyDown(event) {
-
-  switch (event.keyCode) {
-
-    case 16: isShiftDown = true; break;
-
-  }
-
-}
-
-function onDocumentKeyUp(event) {
-
-  switch (event.keyCode) {
-
-    case 16: isShiftDown = false; break;
 
   }
 
@@ -404,3 +386,4 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.render(scene, camera)
 })
+
