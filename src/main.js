@@ -114,7 +114,7 @@ const groundPhysMat = new CANNON.Material()
 //Ground Hitbox
 const groundBody = new CANNON.Body({
   //shape: new CANNON.Plane(),
-  shape: new CANNON.Box(new CANNON.Vec3(15, 15, 0.1)),
+  shape: new CANNON.Box(new CANNON.Vec3(1500, 1500, 1)),
   //mass: 10
   type: CANNON.Body.STATIC,
   material: groundPhysMat
@@ -134,7 +134,7 @@ const boxBody = new CANNON.Body({
   position: new CANNON.Vec3(5, 20, 0),
   material: boxPhysMat
 })
-world.addBody(boxBody)
+//world.addBody(boxBody)
 
 boxBody.angularVelocity.set(0, 10, 0)
 boxBody.angularDamping = 0.5
@@ -158,7 +158,7 @@ const sphere3Body = new CANNON.Body({
   position: new CANNON.Vec3(0, 15, 0),
   material: spherePhysMat
 })
-world.addBody(sphere3Body)
+//world.addBody(sphere3Body)
 
 //Sphere 3  bouncyness
 const groundSphereContactMat = new CANNON.ContactMaterial(
@@ -239,10 +239,10 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let isShiftDown = false
 
-document.addEventListener( 'mousemove', onMouseMove );
-document.addEventListener( 'mousedown', onMouseDown );
-document.addEventListener( 'keydown', onkeydown );
-document.addEventListener( 'keyup', onkeyup );
+document.addEventListener('mousemove', onMouseMove);
+document.addEventListener('mousedown', onMouseDown);
+document.addEventListener('keydown', onkeydown);
+document.addEventListener('keyup', onkeyup);
 
 //move this outside a function, should continuously running
 function onMouseMove(event) {
@@ -309,16 +309,6 @@ function onMouseDown(event) {
 
 }
 
-// Create the user collision
-const playerShapeHalfExtents = new CANNON.Vec3(2, 4, 2)
-const playerShape = new CANNON.Box(playerShapeHalfExtents)
-const playerBody = new CANNON.Body({ mass: 5, shape: playerShape, linearDamping: 0.9 })
-playerBody.position.set(0, 10, 0)
-world.addBody(playerBody)
-
-const controls = new PointerLockControlsCannon(camera, playerBody)
-scene.add(controls.getObject())
-
 /**
  * Renderer
  */
@@ -331,8 +321,23 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-const orbit = new OrbitControls(camera, renderer.domElement)
-orbit.update()
+
+// Create the user collision
+const playerShape = new CANNON.Box(new CANNON.Vec3(1, 2, 1))
+const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.99999999999 })
+playerBody.position.set(0, 20, 0)
+world.addBody(playerBody)
+
+const controls = new PointerLockControlsCannon(camera, playerBody)
+scene.add(controls.getObject())
+controls.enabled = true
+
+window.addEventListener('click', (event) => {
+  if (!controls.enabled) {
+    return
+  }
+
+})
 
 //Current Time
 let time = Date.now()
@@ -354,7 +359,7 @@ const tick = () => {
   //plane.geometry.attributes.position.needsUpdate = true
 
   //Physics
-  world.step(timeStep)
+  world.step(timeStep, deltaTime)
 
   //Ground Mesh Merge
   groundMesh.position.copy(groundBody.position)
@@ -367,6 +372,9 @@ const tick = () => {
   //Sphere 3 Mesh Merge
   sphere3Mesh.position.copy(sphere3Body.position)
   sphere3Mesh.quaternion.copy(sphere3Body.quaternion)
+
+  //Controls
+  controls.update(deltaTime)
 
   //Render
   renderer.render(scene, camera)
