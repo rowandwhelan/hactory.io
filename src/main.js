@@ -1,8 +1,8 @@
 import './main.css'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 import { PointerLockControlsCannon } from './PointerLockControlsCannon.js'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import nebula from '../public/assets/nebula.jpg'
@@ -108,16 +108,34 @@ const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.81, 0)
 })
 
-//Ground Cannon.js Material 
-const groundPhysMat = new CANNON.Material()
+// Tweak contact properties.
+// Contact stiffness - use to make softer/harder contacts
+world.defaultContactMaterial.contactEquationStiffness = 1e9
+
+// Stabilization time in number of timesteps
+world.defaultContactMaterial.contactEquationRelaxation = 4
+
+const solver = new CANNON.GSSolver()
+solver.iterations = 7
+solver.tolerance = 0.1
+world.solver = new CANNON.SplitSolver(solver)
+// use this to test non-split solver
+// world.solver = solver
+
+const mainMaterial = new CANNON.Material()
+const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
+  friction: 0.0003,
+  restitution: 0,
+})
+world.addContactMaterial(mainContactMat)
 
 //Ground Hitbox
 const groundBody = new CANNON.Body({
   //shape: new CANNON.Plane(),
-  shape: new CANNON.Box(new CANNON.Vec3(1500, 1500, 1)),
+  shape: new CANNON.Box(new CANNON.Vec3(4000, 4000, 1)),
   //mass: 10
   type: CANNON.Body.STATIC,
-  material: groundPhysMat
+  material: mainMaterial
 
 })
 world.addBody(groundBody)
@@ -132,21 +150,12 @@ const boxBody = new CANNON.Body({
   mass: 1,
   shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
   position: new CANNON.Vec3(5, 20, 0),
-  material: boxPhysMat
+  material: mainMaterial
 })
 //world.addBody(boxBody)
 
 boxBody.angularVelocity.set(0, 10, 0)
 boxBody.angularDamping = 0.5
-
-//Ground-Box 3 Collision Cannon.js Materials
-const groundBoxContactMat = new CANNON.ContactMaterial(
-  groundPhysMat,
-  boxPhysMat,
-  { friction: 0 }
-)
-
-world.addContactMaterial(groundBoxContactMat)
 
 //Sphere 3 Cannon Material
 const spherePhysMat = new CANNON.Material()
@@ -156,24 +165,15 @@ const sphere3Body = new CANNON.Body({
   mass: 1,
   shape: new CANNON.Sphere(2),
   position: new CANNON.Vec3(0, 15, 0),
-  material: spherePhysMat
+  material: mainMaterial
 })
 //world.addBody(sphere3Body)
-
-//Sphere 3  bouncyness
-const groundSphereContactMat = new CANNON.ContactMaterial(
-  groundPhysMat,
-  spherePhysMat,
-  { restitution: 0.9 }
-)
-
-world.addContactMaterial(groundSphereContactMat)
 
 //sphere 3 damping
 sphere3Body.linearDamping = 0.31
 
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
-scene.fog = new THREE.Fog(0xFFFFFF, 0, 300)
+scene.fog = new THREE.Fog(0xFFFFFF, 400, 600)
 
 /**
  * Lights
@@ -207,7 +207,8 @@ dLightShadowHelper.update()
 */
 
 //Camera
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+const fov = 90
+const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 5000)
 //position
 camera.position.set(0, 15, 0)
 scene.add(camera)
@@ -215,50 +216,50 @@ scene.add(camera)
 const objects = []
 
 //Placeholder Block
-const placeholderGeo = new THREE.BoxGeometry(5, 5, 5);
-const placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
-const placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial);
-scene.add(placeholderMesh);
+const placeholderGeo = new THREE.BoxGeometry(5, 5, 5)
+const placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
+const placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial)
+scene.add(placeholderMesh)
 
-const map = new THREE.TextureLoader().load(stone);
-const cubeGeo = new THREE.BoxGeometry(5, 5, 5);
-const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map });
+const map = new THREE.TextureLoader().load(stone)
+const cubeGeo = new THREE.BoxGeometry(5, 5, 5)
+const cubeMat = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
 
-const grid4Helper = new THREE.GridHelper(100, 20);
-scene.add(grid4Helper);
+const grid4Helper = new THREE.GridHelper(1000, 200)
+scene.add(grid4Helper)
 
-const plane4Geometry = new THREE.PlaneGeometry(100, 100);
-plane4Geometry.rotateX(- Math.PI / 2);
+const plane4Geometry = new THREE.PlaneGeometry(1000, 1000)
+plane4Geometry.rotateX(- Math.PI / 2)
 
-const plane4 = new THREE.Mesh(plane4Geometry, new THREE.MeshBasicMaterial({ visible: false }));
-scene.add(plane4);
+const plane4 = new THREE.Mesh(plane4Geometry, new THREE.MeshBasicMaterial({ visible: false }))
+scene.add(plane4)
 
-objects.push(plane4);
+objects.push(plane4)
 
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
 let isShiftDown = false
 
-document.addEventListener('mousemove', onMouseMove);
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('keydown', onkeydown);
-document.addEventListener('keyup', onkeyup);
+document.addEventListener('mousemove', onMouseMove)
+document.addEventListener('mousedown', onMouseDown)
+document.addEventListener('keydown', onkeydown)
+document.addEventListener('keyup', onkeyup)
 
 //move this outside a function, should continuously running
 function onMouseMove(event) {
 
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
-  raycaster.setFromCamera(mouse, camera);
+  raycaster.setFromCamera(mouse, camera)
 
-  const intersects = raycaster.intersectObjects(objects, false);
+  const intersects = raycaster.intersectObjects(objects, false)
 
   if (intersects.length > 0) {
 
-    const intersect = intersects[0];
+    const intersect = intersects[0]
 
-    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal);
-    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5);
+    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
+    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
 
     renderer.render(scene, camera)
 
@@ -268,15 +269,15 @@ function onMouseMove(event) {
 
 function onMouseDown(event) {
 
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
-  raycaster.setFromCamera(mouse, camera);
+  raycaster.setFromCamera(mouse, camera)
 
-  const intersects = raycaster.intersectObjects(objects, false);
+  const intersects = raycaster.intersectObjects(objects, false)
 
   if (intersects.length > 0) {
 
-    const intersect = intersects[0];
+    const intersect = intersects[0]
 
     // delete cube
 
@@ -284,9 +285,9 @@ function onMouseDown(event) {
 
       if (intersect.object !== plane4) {
 
-        scene.remove(intersect.object);
+        scene.remove(intersect.object)
 
-        objects.splice(objects.indexOf(intersect.object), 1);
+        objects.splice(objects.indexOf(intersect.object), 1)
 
       }
 
@@ -294,12 +295,25 @@ function onMouseDown(event) {
 
     } else {
 
-      const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
-      voxel.position.copy(intersect.point).add(intersect.face.normal);
-      voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5);
-      scene.add(voxel);
+      const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
-      objects.push(voxel);
+      voxel.position.copy(intersect.point).add(intersect.face.normal)
+      voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+      scene.add(voxel)
+
+      objects.push(voxel)
+
+      const voxelBody = new CANNON.Body({
+        type: CANNON.Body.STATIC,
+        shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+        material: mainMaterial
+      })
+
+      //Voxel Mesh Merge
+      voxelBody.position.copy(voxel.position)
+      voxelBody.quaternion.copy(voxel.quaternion)
+
+      world.addBody(voxelBody)
 
     }
 
@@ -313,7 +327,8 @@ function onMouseDown(event) {
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-  canvas: canvas
+  canvas: canvas,
+  antialias: true
 })
 renderer.shadowMap.enabled = true
 //higher quality shadows
@@ -323,8 +338,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
 // Create the user collision
-const playerShape = new CANNON.Box(new CANNON.Vec3(1, 2, 1))
-const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.99999999999 })
+const playerShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1))
+const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial })
 playerBody.position.set(0, 20, 0)
 world.addBody(playerBody)
 
@@ -336,7 +351,7 @@ window.addEventListener('click', (event) => {
   if (!controls.enabled) {
     return
   }
-
+  document.body.requestPointerLock();
 })
 
 //Current Time

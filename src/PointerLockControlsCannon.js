@@ -14,8 +14,10 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     this.cannonBody = cannonBody
 
     // var eyeYPos = 2 // eyes are 2 meters above the ground
-    this.velocityFactor = 0.2
-    this.jumpVelocity = 20
+    this.velocityFactor = 0.045
+    //I messed around with velocity factor, the default is 0.2
+    this.jumpVelocity = 35
+    //Default jumpVelocity is 20
 
     this.pitchObject = new THREE.Object3D()
     this.pitchObject.add(camera)
@@ -118,8 +120,9 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
 
     const { movementX, movementY } = event
 
-    this.yawObject.rotation.y -= movementX * 0.002
-    this.pitchObject.rotation.x -= movementY * 0.002
+    //movement sensitivity, default 0.002
+    this.yawObject.rotation.y -= movementX * 0.004
+    this.pitchObject.rotation.x -= movementY * 0.00225
 
     this.pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitchObject.rotation.x))
   }
@@ -192,10 +195,7 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
   update(delta) {
     if (this.enabled === false) {
       return
-    }
-
-    delta *= 1000
-    delta *= 0.1
+    } 
 
     this.inputVelocity.set(0, 0, 0)
 
