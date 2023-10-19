@@ -8,12 +8,22 @@
   
   <style>
   </style>
-  <script type="module" crossorigin src="./assets/index-b408e75e.js"></script>
+  <script type="module" crossorigin src="./assets/index-0c6bcae0.js"></script>
+  <link rel="stylesheet" href="./assets/index-6635bf9e.css">
 </head>
 
 <body>
   <canvas class = 'webgl'></canvas>
-
+  <script id = "vertexShader" type = "vertex">
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+  </script>
+  <script id = "fragmentShader" type = "fragment">
+    void main() {
+      gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+  }
+  </script>
   
   
   <!-- 
