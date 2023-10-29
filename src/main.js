@@ -4,6 +4,7 @@ import * as CANNON from 'cannon-es'
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 import { PointerLockControlsCannon } from './PointerLockControlsCannon.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import Stats from 'three/addons/libs/stats.module.js';
 
 import nebula from '../public/assets/nebula.jpg'
 import stars from '../public/assets/stars.jpg'
@@ -213,6 +214,13 @@ const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.inner
 camera.position.set(0, 15, 0)
 scene.add(camera)
 
+//FPS Indicator
+const container = document.getElementById( 'container' )
+const stats = new Stats()
+stats.domElement.style.position = 'absolute'
+stats.domElement.style.top = '0px'
+container.appendChild( stats.domElement )
+
 const objects = []
 
 //Placeholder Block
@@ -239,6 +247,22 @@ objects.push(plane4)
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let isShiftDown = false
+
+//const voxelGrid = new THREE.InstancedBufferGeometry();
+//scene.add(voxelGrid)
+
+const voxelBody = new CANNON.Body({
+  type: CANNON.Body.STATIC,
+  shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+  material: mainMaterial
+})
+
+document.addEventListener( 'mousemove', ( event ) => {
+    //camera.rotation.y -= event.movementX * 0.004 
+    camera.rotation.x -= event.movementY * 0.00225
+    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x))
+
+} )
 
 document.addEventListener('mousemove', onMouseMove)
 document.addEventListener('mousedown', onMouseDown)
@@ -289,6 +313,7 @@ function onMouseDown(event) {
 
         objects.splice(objects.indexOf(intersect.object), 1)
 
+        //world.removeBody(voxelBody)
       }
 
       // create cube
@@ -301,13 +326,10 @@ function onMouseDown(event) {
       voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
       scene.add(voxel)
 
-      objects.push(voxel)
+      //threejs buffer thingy
+      //voxelGrid.addShape(voxel)
 
-      const voxelBody = new CANNON.Body({
-        type: CANNON.Body.STATIC,
-        shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-        material: mainMaterial
-      })
+      objects.push(voxel)
 
       //Voxel Mesh Merge
       voxelBody.position.copy(voxel.position)
@@ -376,6 +398,12 @@ const tick = () => {
   //Physics
   world.step(timeStep, deltaTime)
 
+  //FPS Update
+  stats.update();
+
+  //Voxel Merge
+  //voxelGrid.update()
+
   //Ground Mesh Merge
   groundMesh.position.copy(groundBody.position)
   groundMesh.quaternion.copy(groundBody.quaternion)
@@ -393,7 +421,6 @@ const tick = () => {
 
   //Render
   renderer.render(scene, camera)
-
   window.requestAnimationFrame(tick)
 }
 tick()

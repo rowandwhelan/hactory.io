@@ -23,7 +23,7 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     this.pitchObject.add(camera)
 
     this.yawObject = new THREE.Object3D()
-    this.yawObject.position.y = 2
+    this.yawObject.position.y = 0
     this.yawObject.add(this.pitchObject)
 
     this.quaternion = new THREE.Quaternion()
@@ -121,8 +121,8 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     const { movementX, movementY } = event
 
     //movement sensitivity, default 0.002
-    this.yawObject.rotation.y -= movementX * 0.004
-    this.pitchObject.rotation.x -= movementY * 0.00225
+    this.yawObject.rotation.y -= movementX * 0.004 
+    this.pitchObject.rotation.x -= movementY * 0.00225 * 0
 
     this.pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitchObject.rotation.x))
   }
