@@ -23,6 +23,7 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     this.pitchObject.add(camera)
 
     this.yawObject = new THREE.Object3D()
+    //How high up you clip though blocks
     this.yawObject.position.y = 0
     this.yawObject.add(this.pitchObject)
 

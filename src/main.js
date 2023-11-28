@@ -109,6 +109,10 @@ const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.81, 0)
 })
 
+//world.broadphase = new CANNON.GridBroadphase(world);
+//world.broadphase.useBoundingBoxes=true
+//world.allowSleep=true
+
 // Tweak contact properties.
 // Contact stiffness - use to make softer/harder contacts
 world.defaultContactMaterial.contactEquationStiffness = 1e9
@@ -117,11 +121,9 @@ world.defaultContactMaterial.contactEquationStiffness = 1e9
 world.defaultContactMaterial.contactEquationRelaxation = 4
 
 const solver = new CANNON.GSSolver()
-solver.iterations = 7
-solver.tolerance = 0.1
+solver.iterations = 10
+solver.tolerance = 1e-7
 world.solver = new CANNON.SplitSolver(solver)
-// use this to test non-split solver
-// world.solver = solver
 
 const mainMaterial = new CANNON.Material()
 const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
@@ -248,14 +250,15 @@ const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let isShiftDown = false
 
-//const voxelGrid = new THREE.InstancedBufferGeometry();
-//scene.add(voxelGrid)
+let voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
-const voxelBody = new CANNON.Body({
+let voxelBody = new CANNON.Body({
   type: CANNON.Body.STATIC,
-  shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+  //shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
   material: mainMaterial
 })
+//const voxelGrid = new THREE.InstancedBufferGeometry();
+//scene.add(voxelGrid)
 
 document.addEventListener( 'mousemove', ( event ) => {
     //camera.rotation.y -= event.movementX * 0.004 
@@ -313,14 +316,14 @@ function onMouseDown(event) {
 
         objects.splice(objects.indexOf(intersect.object), 1)
 
-        //world.removeBody(voxelBody)
+        world.removeBody(intersect.id)
       }
 
       // create cube
 
     } else {
 
-      const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+  
 
       voxel.position.copy(intersect.point).add(intersect.face.normal)
       voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
@@ -332,10 +335,10 @@ function onMouseDown(event) {
       objects.push(voxel)
 
       //Voxel Mesh Merge
-      voxelBody.position.copy(voxel.position)
-      voxelBody.quaternion.copy(voxel.quaternion)
+      //voxelBody.position.copy(voxel.position)
+      //voxelBody.quaternion.copy(voxel.quaternion)
 
-      world.addBody(voxelBody)
+      voxelBody.addShape(new CANNON.Vec3(5, 5, 5), voxel.position, voxel.quaternion)
 
     }
 
@@ -344,6 +347,64 @@ function onMouseDown(event) {
   }
 
 }
+
+
+/**
+ * World Generation
+ */
+let x
+let y
+let z
+
+let generate = true
+
+function generateWorld(x, y, z){
+x *= 5
+y *= 5
+z *= 5
+
+let value = noise.simplex3(x / 100, y / 100, z / 100);
+
+  if (value < 0){
+    generate = false
+  } else if (value > 0) {
+    generate = true
+  } else {
+    generate = false
+  }
+
+  if (generate){
+
+  voxel = new THREE.Mesh(cubeGeo, cubeMat)
+
+  voxelBody = new CANNON.Body({
+   type: CANNON.Body.STATIC,
+   shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+   material: mainMaterial
+  })
+
+  voxel.position.set(x,y,z)
+  voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+  scene.add(voxel)
+
+  objects.push(voxel)
+
+  //Voxel Mesh Merge
+  voxelBody.position.copy(voxel.position)
+  voxelBody.quaternion.copy(voxel.quaternion)
+
+  world.addBody(voxelBody)
+} 
+}
+
+noise.seed(Math.random());
+for (z = 0; z < 20; z++){
+  for (x = 0; x < 20; x++) {
+    for (y = 0; y < 2; y++) {
+   
+    generateWorld(x, y, z)
+
+}}}
 
 /**
  * Renderer
@@ -384,7 +445,7 @@ const timeStep = 1 / 60
 
 //animation
 const tick = () => {
-
+  window.requestAnimationFrame(tick)
   //current time
   const currentTime = Date.now()
   const deltaTime = currentTime - time
@@ -395,11 +456,8 @@ const tick = () => {
   //plane.geometry.attributes.position.array[(Math.floor(((plane.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random() / 10)
   //plane.geometry.attributes.position.needsUpdate = true
 
-  //Physics
-  world.step(timeStep, deltaTime)
-
-  //FPS Update
-  stats.update();
+  //Physics (1 for the 3rd parameter makes it faster but lower quality)
+  world.step(timeStep, deltaTime, 1)
 
   //Voxel Merge
   //voxelGrid.update()
@@ -416,12 +474,15 @@ const tick = () => {
   sphere3Mesh.position.copy(sphere3Body.position)
   sphere3Mesh.quaternion.copy(sphere3Body.quaternion)
 
+  
   //Controls
   controls.update(deltaTime)
 
   //Render
   renderer.render(scene, camera)
-  window.requestAnimationFrame(tick)
+
+  //FPS Update
+  stats.update();
 }
 tick()
 
