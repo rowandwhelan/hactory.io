@@ -158,8 +158,8 @@ dLightShadowHelper.update()
 //Camera
 const fov = 90
 const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 5000)
-//position
-camera.position.set(0, 15, 0)
+//position of camera above ground
+camera.position.set(0, 5, 0)
 scene.add(camera)
 
 //FPS Indicator
@@ -200,10 +200,6 @@ const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let isShiftDown = false
 
-
-//const voxelGrid = new THREE.InstancedBufferGeometry();
-//scene.add(voxelGrid)
-
 document.addEventListener( 'mousemove', ( event ) => {
     //camera.rotation.y -= event.movementX * 0.004 
     camera.rotation.x -= event.movementY * 0.00225
@@ -225,31 +221,41 @@ function onMouseDown(event) {
 
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
+  //camera.position.copy(playerBody.position)
+
   //Translates mouse position into 3d co-ords
   var vec = new THREE.Vector3()
   var pos = new THREE.Vector3()
+
+  vec.set(( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 )
   
-  vec.set(( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
-  
-  vec.unproject( camera );
-  
-  vec.sub( camera.position ).normalize();
+  vec.unproject( camera )
+ 
+  vec.sub( camera.position ).normalize()
   
   var distance = - camera.position.z / vec.z;
   
-  pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
-
+  pos.copy( camera.position ).add( vec.multiplyScalar( distance ) )
 
   raycaster.setFromCamera(mouse, camera)
   const intersects = raycaster.intersectObjects(objects, true)
 
-  const ray = new CANNON.Ray(pos, camera.position)
-  const cannonIntersects = ray.intersectBodies(objects, true)
+  console.log(camera.position)
+  console.log(pos)
+  console.log(playerBody.position)
+  
+  const raycast = new CANNON.Ray(pos, camera.position)
+
+
+  console.log(raycast)
+  const rayOptions = { from: pos, mode: 1, result: raycastResult, to: camera.position }
+  var raycastResult = new CANNON.RaycastResult()
+  const cannonIntersects = raycast.intersectWorld(world, rayOptions)
 
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
-    const cannonIntersect = cannonIntersects[0]
+    //const cannonIntersect = cannonRaycastResults[0]
     // delete cube
 
     if (event.button == 2) {
@@ -402,7 +408,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 // Create the user collision
 const playerShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1))
 const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial })
-playerBody.position.set(0, 20, 0)
+playerBody.position.set(0, 10, 0)
 world.addBody(playerBody)
 
 const controls = new PointerLockControlsCannon(camera, playerBody)
@@ -441,8 +447,6 @@ const tick = () => {
   //Voxel Merge
   //voxelGrid.update()
 
-
-  
   //Controls
   controls.update(deltaTime)
 
