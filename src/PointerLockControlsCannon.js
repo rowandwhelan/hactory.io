@@ -16,7 +16,7 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     // var eyeYPos = 2 // eyes are 2 meters above the ground
     this.velocityFactor = 0.045
     //I messed around with velocity factor, the default is 0.2
-    this.jumpVelocity = 35
+    this.jumpVelocity = 15
     //Default jumpVelocity is 20
 
     this.pitchObject = new THREE.Object3D()
