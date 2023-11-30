@@ -6,6 +6,4 @@ cd whatever = to go to whatever
 ls = check inside folder
 
 TODO:
-Remove old three.js stuff 
-
-three js works
+why stuff not working!!???
