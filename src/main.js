@@ -205,7 +205,24 @@ document.addEventListener('keyup', onkeyup)
 
 //move this outside a function, should continuously running
 function onMouseMove(event) {
+  
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
+
+  raycaster.setFromCamera(mouse, camera)
+
+  const intersects = raycaster.intersectObjects(objects, false)
+
+  if (intersects.length > 0) {
+
+    const intersect = intersects[0]
+    //moves placeholder mesh
+    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
+    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+
+    renderer.render(scene, camera)
+
+  }
+
 }
 
 function onMouseDown(event) {
@@ -258,7 +275,6 @@ function onMouseDown(event) {
         objects.splice(objects.indexOf(intersect.object), 1)
 
         //world.removeBody(cannonIntersect)
-        
       }
 
       // create cube
