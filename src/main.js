@@ -67,30 +67,6 @@ const box2MultiMaterial = [
   new THREE.MeshBasicMaterial({ map: textureLoader.load(nebula) })
 ]
 
-//Box 3#
-const box3Geo = new THREE.BoxGeometry(2, 2, 2)
-const box3Mat = new THREE.MeshStandardMaterial({
-  color: 0x00ff00,
-  wireframe: false
-})
-const box3Mesh = new THREE.Mesh(box3Geo, box3Mat)
-box3Mesh.castShadow = true
-box3Mesh.position.set(new CANNON.Vec3(1, 20, 0))
-scene.add(box3Mesh)
-
-//Sphere 3
-const sphere3Geo = new THREE.SphereGeometry(2)
-const sphere3Mat = new THREE.MeshStandardMaterial({
-  color: 0x00ff00,
-  wireframe: false,
-  metalness: 0.3,
-  roughness: 0.4
-})
-const sphere3Mesh = new THREE.Mesh(sphere3Geo, sphere3Mat)
-sphere3Mesh.castShadow = true
-sphere3Mesh.receiveShadow = true
-scene.add(sphere3Mesh)
-
 //Ground
 const groundGeo = new THREE.PlaneGeometry(30, 30)
 const groundMat = new THREE.MeshStandardMaterial({
@@ -109,6 +85,10 @@ const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.81, 0)
 })
 
+//world.broadphase = new CANNON.GridBroadphase(world);
+//world.broadphase.useBoundingBoxes=true
+//world.allowSleep=true
+
 // Tweak contact properties.
 // Contact stiffness - use to make softer/harder contacts
 world.defaultContactMaterial.contactEquationStiffness = 1e9
@@ -117,11 +97,9 @@ world.defaultContactMaterial.contactEquationStiffness = 1e9
 world.defaultContactMaterial.contactEquationRelaxation = 4
 
 const solver = new CANNON.GSSolver()
-solver.iterations = 7
-solver.tolerance = 0.1
+solver.iterations = 10
+solver.tolerance = 1e-7
 world.solver = new CANNON.SplitSolver(solver)
-// use this to test non-split solver
-// world.solver = solver
 
 const mainMaterial = new CANNON.Material()
 const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
@@ -142,36 +120,6 @@ const groundBody = new CANNON.Body({
 world.addBody(groundBody)
 groundBody.position.set(5, 0, -10)
 groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
-
-//Box 3 Cannon.js Material
-const boxPhysMat = new CANNON.Material()
-
-//box 3 hitbox
-const boxBody = new CANNON.Body({
-  mass: 1,
-  shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
-  position: new CANNON.Vec3(5, 20, 0),
-  material: mainMaterial
-})
-//world.addBody(boxBody)
-
-boxBody.angularVelocity.set(0, 10, 0)
-boxBody.angularDamping = 0.5
-
-//Sphere 3 Cannon Material
-const spherePhysMat = new CANNON.Material()
-
-//sphere 3 hitbox
-const sphere3Body = new CANNON.Body({
-  mass: 1,
-  shape: new CANNON.Sphere(2),
-  position: new CANNON.Vec3(0, 15, 0),
-  material: mainMaterial
-})
-//world.addBody(sphere3Body)
-
-//sphere 3 damping
-sphere3Body.linearDamping = 0.31
 
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
 scene.fog = new THREE.Fog(0xFFFFFF, 400, 600)
@@ -210,8 +158,8 @@ dLightShadowHelper.update()
 //Camera
 const fov = 90
 const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 5000)
-//position
-camera.position.set(0, 15, 0)
+//position of camera above ground
+camera.position.set(0, 5, 0)
 scene.add(camera)
 
 //FPS Indicator
@@ -244,18 +192,13 @@ scene.add(plane4)
 
 objects.push(plane4)
 
+//Ground Mesh Merge
+groundMesh.position.copy(groundBody.position)
+groundMesh.quaternion.copy(groundBody.quaternion)
+
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let isShiftDown = false
-
-//const voxelGrid = new THREE.InstancedBufferGeometry();
-//scene.add(voxelGrid)
-
-const voxelBody = new CANNON.Body({
-  type: CANNON.Body.STATIC,
-  shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-  material: mainMaterial
-})
 
 document.addEventListener( 'mousemove', ( event ) => {
     //camera.rotation.y -= event.movementX * 0.004 
@@ -271,38 +214,48 @@ document.addEventListener('keyup', onkeyup)
 
 //move this outside a function, should continuously running
 function onMouseMove(event) {
-
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
-
-  raycaster.setFromCamera(mouse, camera)
-
-  const intersects = raycaster.intersectObjects(objects, false)
-
-  if (intersects.length > 0) {
-
-    const intersect = intersects[0]
-
-    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
-    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-
-    renderer.render(scene, camera)
-
-  }
-
 }
 
 function onMouseDown(event) {
 
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
-  raycaster.setFromCamera(mouse, camera)
+  //camera.position.copy(playerBody.position)
 
-  const intersects = raycaster.intersectObjects(objects, false)
+  //Translates mouse position into 3d co-ords
+  var vec = new THREE.Vector3()
+  var pos = new THREE.Vector3()
+
+  vec.set(( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 )
+  
+  vec.unproject( camera )
+ 
+  vec.sub( camera.position ).normalize()
+  
+  var distance = - camera.position.z / vec.z;
+  
+  pos.copy( camera.position ).add( vec.multiplyScalar( distance ) )
+
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(objects, true)
+
+  console.log(camera.position)
+  console.log(pos)
+  console.log(playerBody.position)
+  
+  const raycast = new CANNON.Ray(pos, camera.position)
+
+
+  console.log(raycast)
+  const rayOptions = { from: pos, mode: 1, result: raycastResult, to: camera.position }
+  var raycastResult = new CANNON.RaycastResult()
+  const cannonIntersects = raycast.intersectWorld(world, rayOptions)
 
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
-
+    //const cannonIntersect = cannonRaycastResults[0]
     // delete cube
 
     if (event.button == 2) {
@@ -313,7 +266,8 @@ function onMouseDown(event) {
 
         objects.splice(objects.indexOf(intersect.object), 1)
 
-        //world.removeBody(voxelBody)
+        world.removeBody(cannonIntersect)
+        
       }
 
       // create cube
@@ -322,13 +276,15 @@ function onMouseDown(event) {
 
       const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
+      const voxelBody = new CANNON.Body({
+       type: CANNON.Body.STATIC,
+       shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+       material: mainMaterial
+      })
+
       voxel.position.copy(intersect.point).add(intersect.face.normal)
       voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
       scene.add(voxel)
-
-      //threejs buffer thingy
-      //voxelGrid.addShape(voxel)
-
       objects.push(voxel)
 
       //Voxel Mesh Merge
@@ -336,7 +292,6 @@ function onMouseDown(event) {
       voxelBody.quaternion.copy(voxel.quaternion)
 
       world.addBody(voxelBody)
-
     }
 
     renderer.render(scene, camera)
@@ -344,6 +299,98 @@ function onMouseDown(event) {
   }
 
 }
+
+function addVoxel (x, y, z, type) {
+
+  const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+
+  const voxelBody = new CANNON.Body({
+   type: CANNON.Body.STATIC,
+   shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+   material: mainMaterial
+  })
+
+  voxel.position.set(x, y, z)
+  voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+  scene.add(voxel)
+  objects.push(voxel)
+
+  voxelBody.position.copy(voxel.position)
+  voxelBody.quaternion.copy(voxel.quaternion)
+
+  world.addBody(voxelBody)
+  physObjs.push(voxelBody)
+  return voxelBody
+}
+
+function removeVoxel (x, y, z, type) {
+  if (intersect.object !== plane4) {
+
+    scene.remove(intersect.object)
+
+    objects.splice(objects.indexOf(intersect.object), 1)
+
+    world.removeBody(intersect.object.position)
+  }
+}
+
+
+/**
+ * World Generation
+ */
+let x
+let y
+let z
+
+let generate = true
+
+function generateWorld(x, y, z){
+x *= 5
+y *= 5
+z *= 5
+
+let value = noise.simplex3(x / 100, y / 100, z / 100);
+
+  if (value < 0){
+    generate = false
+  } else if (value > 0) {
+    generate = true
+  } else {
+    generate = false
+  }
+
+  if (generate){
+
+  const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+
+  const voxelBody = new CANNON.Body({
+   type: CANNON.Body.STATIC,
+   shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+   material: mainMaterial
+  })
+
+  voxel.position.set(x,y,z)
+  voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+  scene.add(voxel)
+
+  objects.push(voxel)
+
+  //Voxel Mesh Merge
+  voxelBody.position.copy(voxel.position)
+  voxelBody.quaternion.copy(voxel.quaternion)
+
+  world.addBody(voxelBody)
+} 
+}
+
+noise.seed(Math.random());
+for (z = 0; z < 20; z++){
+  for (x = 0; x < 20; x++) {
+    for (y = 0; y < 2; y++) {
+   
+    generateWorld(x, y, z)
+
+}}}
 
 /**
  * Renderer
@@ -358,11 +405,10 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-
 // Create the user collision
 const playerShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1))
 const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial })
-playerBody.position.set(0, 20, 0)
+playerBody.position.set(0, 10, 0)
 world.addBody(playerBody)
 
 const controls = new PointerLockControlsCannon(camera, playerBody)
@@ -384,7 +430,7 @@ const timeStep = 1 / 60
 
 //animation
 const tick = () => {
-
+  window.requestAnimationFrame(tick)
   //current time
   const currentTime = Date.now()
   const deltaTime = currentTime - time
@@ -395,33 +441,20 @@ const tick = () => {
   //plane.geometry.attributes.position.array[(Math.floor(((plane.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random() / 10)
   //plane.geometry.attributes.position.needsUpdate = true
 
-  //Physics
-  world.step(timeStep, deltaTime)
-
-  //FPS Update
-  stats.update();
+  //Physics (1 for the 3rd parameter makes it faster but lower quality)
+  world.step(timeStep, deltaTime, 1)
 
   //Voxel Merge
   //voxelGrid.update()
-
-  //Ground Mesh Merge
-  groundMesh.position.copy(groundBody.position)
-  groundMesh.quaternion.copy(groundBody.quaternion)
-
-  //Cube 3 Mesh Merge
-  box3Mesh.position.copy(boxBody.position)
-  box3Mesh.quaternion.copy(boxBody.quaternion)
-
-  //Sphere 3 Mesh Merge
-  sphere3Mesh.position.copy(sphere3Body.position)
-  sphere3Mesh.quaternion.copy(sphere3Body.quaternion)
 
   //Controls
   controls.update(deltaTime)
 
   //Render
   renderer.render(scene, camera)
-  window.requestAnimationFrame(tick)
+
+  //FPS Update
+  stats.update();
 }
 tick()
 
