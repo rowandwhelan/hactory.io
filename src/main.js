@@ -16,6 +16,7 @@ import negz from '../public/assets/skybox/negz.jpg'
 import posx from '../public/assets/skybox/posx.jpg'
 import posy from '../public/assets/skybox/posy.jpg'
 import posz from '../public/assets/skybox/posz.jpg'
+import { normalize } from 'three/src/math/MathUtils.js'
 
 /**
  * Base
@@ -27,11 +28,12 @@ const canvas = document.querySelector('.webgl')
 const scene = new THREE.Scene()
 
 //Camera
-const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 5000)
+let camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 5000)
 //position of camera above ground
 camera.position.set(0, 8, 0)
-scene.add(camera)
 
+//Objects
+const objects = []
 
 /**
  * Textures
@@ -109,11 +111,10 @@ const groundBody = new CANNON.Body({
   //mass: 10
   type: CANNON.Body.STATIC,
   material: mainMaterial
-
 })
-world.addBody(groundBody)
 groundBody.position.set(5, 0, -10)
 groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
+world.addBody(groundBody)
 
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
 scene.fog = new THREE.Fog(0xFFFFFF, 400, 600)
@@ -166,8 +167,6 @@ const map = new THREE.TextureLoader().load(stone)
 const cubeGeo = new THREE.BoxGeometry(5, 5, 5)
 const cubeMat = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
 
-const objects = []
-
 //TODO
 //const voxelGrid = new THREE.BufferGeometry()
 //const voxels = new Float32Array([])
@@ -211,16 +210,27 @@ function onMouseMove(event) {
   raycaster.setFromCamera(mouse, camera)
 
   const intersects = raycaster.intersectObjects(objects, false)
-
+ 
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
+    if (intersect.object.id !== 12){
+      if (intersect.distance >= 25) {
+        placeholderMesh.visible = false
+      } if (intersect.distance <= 25) {
+        placeholderMesh.visible = true
+      }
+   
+      placeholderMesh.opacity = (1/((intersect.distance/25)))*0.2
+      console.log(placeholderMesh.opacity)
     //moves placeholder mesh
+    
     placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
     placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
 
     renderer.render(scene, camera)
-
+      
+  }
   }
 
 }
@@ -265,7 +275,8 @@ function onMouseDown(event) {
     const intersect = intersects[0]
     //const cannonIntersect = raycastResult[0]
     // delete cube
-
+    if ((intersect.object.id !== 12) && (intersect.distance <= 25)){
+      
     if (event.button == 2) {
 
       if (intersect.object !== ground) {
@@ -304,7 +315,7 @@ function onMouseDown(event) {
     renderer.render(scene, camera)
 
   }
-
+  }
 }
 
 function addVoxel (x, y, z, type) {
@@ -453,13 +464,8 @@ const tick = () => {
 
   //Controls
   controls.update(deltaTime)
-  
-
-  //Render
   renderer.render(scene, camera)
-
-  //FPS Update
-  stats.update();
+  stats.update()
 }
 tick()
 
