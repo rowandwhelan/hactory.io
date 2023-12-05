@@ -104,18 +104,6 @@ const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
 })
 world.addContactMaterial(mainContactMat)
 
-//Ground Hitbox
-const groundBody = new CANNON.Body({
-  //shape: new CANNON.Plane(),
-  shape: new CANNON.Box(new CANNON.Vec3(4000, 4000, 1)),
-  //mass: 10
-  type: CANNON.Body.STATIC,
-  material: mainMaterial
-})
-groundBody.position.set(5, 0, -10)
-groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
-world.addBody(groundBody)
-
 //Fog or FogExp2 [fog grows exponetially] (color, near limit, far limit)
 scene.fog = new THREE.Fog(0xFFFFFF, 400, 600)
 
@@ -159,8 +147,8 @@ container.appendChild( stats.domElement )
 
 //Placeholder Block
 const placeholderGeo = new THREE.BoxGeometry(5, 5, 5)
-const placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
-const placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial)
+let placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
+let placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial)
 scene.add(placeholderMesh)
 
 const map = new THREE.TextureLoader().load(stone)
@@ -170,21 +158,6 @@ const cubeMat = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
 //TODO
 //const voxelGrid = new THREE.BufferGeometry()
 //const voxels = new Float32Array([])
-
-const groundGridHelper = new THREE.GridHelper(1000, 200)
-scene.add(groundGridHelper)
-
-const groundGeometry = new THREE.PlaneGeometry(1000, 1000)
-groundGeometry.rotateX(- Math.PI / 2)
-
-const ground = new THREE.Mesh(groundGeometry, new THREE.MeshBasicMaterial({ visible: false }))
-scene.add(ground)
-
-objects.push(ground)
-
-//Ground Mesh Merge
-ground.position.copy(groundBody.position)
-ground.quaternion.copy(groundBody.quaternion)
 
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
@@ -221,8 +194,9 @@ function onMouseMove(event) {
         placeholderMesh.visible = true
       }
    
-      placeholderMesh.opacity = (1/((intersect.distance/25)))*0.2
-      console.log(placeholderMesh.opacity)
+      placeholderMesh.color = '#0xff0000'
+      //(1/((intersect.distance/25)))*10
+      console.log(placeholderMesh.color)
     //moves placeholder mesh
     
     placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
@@ -232,7 +206,6 @@ function onMouseMove(event) {
       
   }
   }
-
 }
 
 function onMouseDown(event) {
@@ -279,15 +252,12 @@ function onMouseDown(event) {
       
     if (event.button == 2) {
 
-      if (intersect.object !== ground) {
-
         scene.remove(intersect.object)
 
         objects.splice(objects.indexOf(intersect.object), 1)
 
         //world.removeBody(cannonIntersect)
-      }
-
+      
       // create cube
 
     } else {
@@ -342,15 +312,13 @@ function addVoxel (x, y, z, type) {
 }
 
 function removeVoxel (x, y, z, type) {
-  if (intersect.object !== ground) {
-
+  
     scene.remove(intersect.object)
 
     objects.splice(objects.indexOf(intersect.object), 1)
 
     world.removeBody(intersect.object.position)
   }
-}
 
 
 /**
@@ -402,9 +370,9 @@ let value = noise.simplex3(x / 100, y / 100, z / 100);
 }
 
 noise.seed(Math.random());
-for (z = 0; z < 20; z++){
-  for (x = 0; x < 20; x++) {
-    for (y = 0; y < 2; y++) {
+for (z = -30; z < 30; z++){
+  for (x = -30; x < 30; x++) {
+    for (y = -2; y < 0; y++) {
    
     generateWorld(x, y, z)
 
