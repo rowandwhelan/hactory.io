@@ -289,7 +289,7 @@ function onMouseDown(event) {
 
  /**
        * Example construction of a voxel world and player.
-       */
+       
 
       // three.js variables
       let material
@@ -509,6 +509,8 @@ function onMouseDown(event) {
         renderer.render(scene, camera)
         stats.update()
       }
+      */
+
 function addVoxel (x, y, z, filled) {
 
   const voxel = new THREE.Mesh(cubeGeo, cubeMat)
@@ -555,7 +557,7 @@ if(noise.simplex3(x / 100, y / 100, z / 100) <= 0){
   filled = false
 }
 
-  if (generate){
+  if (filled){
 
   const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
