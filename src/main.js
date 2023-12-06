@@ -31,7 +31,7 @@ const scene = new THREE.Scene()
 //Camera
 let camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 5000)
 //position of camera above ground
-camera.position.set(0, 8, 0)
+camera.position.set(0, 6, 0)
 
 //Objects
 const objects = []
@@ -82,20 +82,9 @@ const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.81, 0)
 })
 
-//world.broadphase = new CANNON.GridBroadphase(world);
-//world.broadphase.useBoundingBoxes=true
-//world.allowSleep=true
-
-// Tweak contact properties.
-// Contact stiffness - use to make softer/harder contacts
-world.defaultContactMaterial.contactEquationStiffness = 1e9
-
-// Stabilization time in number of timesteps
-world.defaultContactMaterial.contactEquationRelaxation = 4
-
 const solver = new CANNON.GSSolver()
-solver.iterations = 10
-solver.tolerance = 1e-7
+solver.iterations = 5
+solver.tolerance = 1e-5
 world.solver = new CANNON.SplitSolver(solver)
 
 const mainMaterial = new CANNON.Material()
@@ -140,30 +129,26 @@ dLightShadowHelper.update()
 */
 
 //FPS Indicator
-const container = document.getElementById( 'container' )
+const container = document.getElementById('container')
 const stats = new Stats()
 stats.domElement.style.position = 'absolute'
 stats.domElement.style.top = '0px'
-container.appendChild( stats.domElement )
-  
+container.appendChild(stats.domElement)
+
 const map = new THREE.TextureLoader().load(stone)
 const cubeGeo = new THREE.BoxGeometry(5, 5, 5)
 const cubeMat = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
-
-//TODO
-//const voxelGrid = new THREE.BufferGeometry()
-//const voxels = new Float32Array([])
 
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let isShiftDown = false
 
-document.addEventListener( 'mousemove', ( event ) => {
-    //camera.rotation.y -= event.movementX * 0.004 
-    camera.rotation.x -= event.movementY * 0.00225
-    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x))
+document.addEventListener('mousemove', (event) => {
+  //camera.rotation.y -= event.movementX * 0.004 
+  camera.rotation.x -= event.movementY * 0.00225
+  camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x))
 
-} )
+})
 
 document.addEventListener('mousemove', onMouseMove)
 document.addEventListener('mousedown', onMouseDown)
@@ -178,32 +163,32 @@ scene.add(placeholderMesh)
 
 //move this outside a function, should continuously running
 function onMouseMove(event) {
-  
+
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
   raycaster.setFromCamera(mouse, camera)
 
   const intersects = raycaster.intersectObjects(objects, false)
- 
+
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
-    if (intersect.object.id !== 12){
+    if ((intersect.distance <= maxReach) && (Math.floor(intersect.point.y) != Math.floor(playerBody.position.y))) {
       if (intersect.distance >= maxReach) {
         placeholderMesh.visible = false
       } if (intersect.distance <= maxReach) {
         placeholderMesh.visible = true
       }
-      
-      placeholderMaterial.opacity = (maxReach*1.5 - intersect.distance) / (maxReach*1.5 - 0)
-      
-    //moves placeholder mesh
-    placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
-    placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
 
-    renderer.render(scene, camera)
-    
-  }
+      placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
+
+      //moves placeholder mesh
+      placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
+      placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+
+      renderer.render(scene, camera)
+
+    }
   }
 }
 
@@ -247,278 +232,278 @@ function onMouseDown(event) {
     const intersect = intersects[0]
     //const cannonIntersect = raycastResult[0]
     // delete cube
-    if ((intersect.object.id !== 12) && (intersect.distance <= maxReach)){
-      
-    if (event.button == 2) {
+    if ((intersect.distance <= maxReach) && (Math.floor(intersect.point.y) != Math.floor(playerBody.position.y))) {
+
+      if (event.button == 2) {
 
         scene.remove(intersect.object)
 
         objects.splice(objects.indexOf(intersect.object), 1)
 
         //world.removeBody(cannonIntersect)
-      
-      // create cube
 
-    } else {
+        // create cube
 
-      const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+      } else {
 
-      const voxelBody = new CANNON.Body({
-       type: CANNON.Body.STATIC,
-       shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-       material: mainMaterial
-      })
+        const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
-      voxel.position.copy(intersect.point).add(intersect.face.normal)
-      voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-      scene.add(voxel)
-      objects.push(voxel)
+        const voxelBody = new CANNON.Body({
+          type: CANNON.Body.STATIC,
+          shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+          material: mainMaterial
+        })
 
-      //Voxel Mesh Merge
-      voxelBody.position.copy(voxel.position)
-      voxelBody.quaternion.copy(voxel.quaternion)
+        voxel.position.copy(intersect.point).add(intersect.face.normal)
+        voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+        scene.add(voxel)
+        objects.push(voxel)
 
-      world.addBody(voxelBody)
+        //Voxel Mesh Merge
+        voxelBody.position.copy(voxel.position)
+        voxelBody.quaternion.copy(voxel.quaternion)
+
+        world.addBody(voxelBody)
+      }
+
+      renderer.render(scene, camera)
+
     }
-
-    renderer.render(scene, camera)
-
-  }
   }
 }
 
- /**
-       * Example construction of a voxel world and player.
-       
+/**
+      * Example construction of a voxel world and player.
+      
 
-      // three.js variables
-      let material
-      let floor
+     // three.js variables
+     let material
+     let floor
 
-      // cannon.js variables
+     // cannon.js variables
 
-      let lastCallTime = performance.now() / 1000
-      let sphereShape
-      let sphereBody
-      let physicsMaterial
-      let voxels
+     let lastCallTime = performance.now() / 1000
+     let sphereShape
+     let sphereBody
+     let physicsMaterial
+     let voxels
 
-      const balls = []
-      const ballMeshes = []
-      const boxes = []
-      const boxMeshes = []
+     const balls = []
+     const ballMeshes = []
+     const boxes = []
+     const objects = []
 
-      // Number of voxels
-      const nx = 50
-      const ny = 8
-      const nz = 50
+     // Number of voxels
+     const nx = 50
+     const ny = 8
+     const nz = 50
 
-      // Scale of voxels
-      const sx = 0.5
-      const sy = 0.5
-      const sz = 0.5
+     // Scale of voxels
+     const sx = 0.5
+     const sy = 0.5
+     const sz = 0.5
 
-        // Generic material
-        material = new THREE.MeshLambertMaterial({ color: 0xdddddd })
+       // Generic material
+       material = new THREE.MeshLambertMaterial({ color: 0xdddddd })
 
-        // Floor
-        const floorGeometry = new THREE.PlaneBufferGeometry(300, 300, 50, 50)
-        floorGeometry.rotateX(-Math.PI / 2)
-        floor = new THREE.Mesh(floorGeometry, material)
-        floor.receiveShadow = true
-        scene.add(floor)
+       // Floor
+       const floorGeometry = new THREE.PlaneBufferGeometry(300, 300, 50, 50)
+       floorGeometry.rotateX(-Math.PI / 2)
+       floor = new THREE.Mesh(floorGeometry, material)
+       floor.receiveShadow = true
+       scene.add(floor)
 
 
 
-      function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize(window.innerWidth, window.innerHeight)
-      }
+     function onWindowResize() {
+       camera.aspect = window.innerWidth / window.innerHeight
+       camera.updateProjectionMatrix()
+       renderer.setSize(window.innerWidth, window.innerHeight)
+     }
 
-      function initCannon() {
-        // Setup world
-        world = new CANNON.World()
+     function initCannon() {
+       // Setup world
+       world = new CANNON.World()
 
-        // Tweak contact properties.
-        // Contact stiffness - use to make softer/harder contacts
-        world.defaultContactMaterial.contactEquationStiffness = 1e9
+       // Tweak contact properties.
+       // Contact stiffness - use to make softer/harder contacts
+       world.defaultContactMaterial.contactEquationStiffness = 1e9
 
-        // Stabilization time in number of timesteps
-        world.defaultContactMaterial.contactEquationRelaxation = 4
+       // Stabilization time in number of timesteps
+       world.defaultContactMaterial.contactEquationRelaxation = 4
 
-        const solver = new CANNON.GSSolver()
-        solver.iterations = 7
-        solver.tolerance = 0.1
-        world.solver = new CANNON.SplitSolver(solver)
-        // use this to test non-split solver
-        // world.solver = solver
+       const solver = new CANNON.GSSolver()
+       solver.iterations = 7
+       solver.tolerance = 0.1
+       world.solver = new CANNON.SplitSolver(solver)
+       // use this to test non-split solver
+       // world.solver = solver
 
-        world.gravity.set(0, -20, 0)
+       world.gravity.set(0, -20, 0)
 
-        world.broadphase.useBoundingBoxes = true
+       world.broadphase.useBoundingBoxes = true
 
-        // Create a slippery material (friction coefficient = 0.0)
-        physicsMaterial = new CANNON.Material('physics')
-        const physics_physics = new CANNON.ContactMaterial(physicsMaterial, physicsMaterial, {
-          friction: 0.0,
-          restitution: 0.3,
-        })
+       // Create a slippery material (friction coefficient = 0.0)
+       physicsMaterial = new CANNON.Material('physics')
+       const physics_physics = new CANNON.ContactMaterial(physicsMaterial, physicsMaterial, {
+         friction: 0.0,
+         restitution: 0.3,
+       })
 
-        // We must add the contact materials to the world
-        world.addContactMaterial(physics_physics)
+       // We must add the contact materials to the world
+       world.addContactMaterial(physics_physics)
 
-        // Create the user collision sphere
-        const radius = 1.3
-        sphereShape = new CANNON.Sphere(radius)
-        sphereBody = new CANNON.Body({ mass: 5, material: physicsMaterial })
-        sphereBody.addShape(sphereShape)
-        sphereBody.position.set(nx * sx * 0.5, ny * sy + radius * 2, nz * sz * 0.5)
-        sphereBody.linearDamping = 0.9
-        world.addBody(sphereBody)
+       // Create the user collision sphere
+       const radius = 1.3
+       sphereShape = new CANNON.Sphere(radius)
+       sphereBody = new CANNON.Body({ mass: 5, material: physicsMaterial })
+       sphereBody.addShape(sphereShape)
+       sphereBody.position.set(nx * sx * 0.5, ny * sy + radius * 2, nz * sz * 0.5)
+       sphereBody.linearDamping = 0.9
+       world.addBody(sphereBody)
 
-        // Create the ground plane
-        const groundShape = new CANNON.Plane()
-        const groundBody = new CANNON.Body({ mass: 0, material: physicsMaterial })
-        groundBody.addShape(groundShape)
-        groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
-        world.addBody(groundBody)
+       // Create the ground plane
+       const groundShape = new CANNON.Plane()
+       const groundBody = new CANNON.Body({ mass: 0, material: physicsMaterial })
+       groundBody.addShape(groundShape)
+       groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
+       world.addBody(groundBody)
 
-        // Voxels
-        voxels = new VoxelLandscape(world, nx, ny, nz, sx, sy, sz)
+       // Voxels
+       voxels = new VoxelLandscape(world, nx, ny, nz, sx, sy, sz)
 
-        for (let i = 0; i < nx; i++) {
-          for (let j = 0; j < ny; j++) {
-            for (let k = 0; k < nz; k++) {
-              let filled = true
+       for (let i = 0; i < nx; i++) {
+         for (let j = 0; j < ny; j++) {
+           for (let k = 0; k < nz; k++) {
+             let filled = true
 
-              // Insert map constructing logic here
-              if (Math.sin(i * 0.1) * Math.sin(k * 0.1) < (j / ny) * 2 - 1) {
-                filled = false
-              }
+             // Insert map constructing logic here
+             if (Math.sin(i * 0.1) * Math.sin(k * 0.1) < (j / ny) * 2 - 1) {
+               filled = false
+             }
 
-              voxels.setFilled(i, j, k, filled)
-            }
-          }
-        }
+             voxels.setFilled(i, j, k, filled)
+           }
+         }
+       }
 
-        voxels.update()
+       voxels.update()
 
-        console.log(`${voxels.boxes.length} voxel physics bodies`)
+       console.log(`${voxels.boxes.length} voxel physics bodies`)
 
-        // Voxel meshes
-        for (let i = 0; i < voxels.boxes.length; i++) {
-          const box = voxels.boxes[i]
-          const voxelGeometry = new THREE.BoxBufferGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
-          const voxelMesh = new THREE.Mesh(voxelGeometry, material)
-          voxelMesh.castShadow = true
-          voxelMesh.receiveShadow = true
-          boxMeshes.push(voxelMesh)
-          scene.add(voxelMesh)
-        }
+       // Voxel meshes
+       for (let i = 0; i < voxels.boxes.length; i++) {
+         const box = voxels.boxes[i]
+         const voxelGeometry = new THREE.BoxBufferGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
+         const voxelMesh = new THREE.Mesh(voxelGeometry, material)
+         voxelMesh.castShadow = true
+         voxelMesh.receiveShadow = true
+         objects.push(voxelMesh)
+         scene.add(voxelMesh)
+       }
 
-        // The shooting balls
-        const shootVelocity = 15
-        const ballShape = new CANNON.Sphere(0.2)
-        const ballGeometry = new THREE.SphereBufferGeometry(ballShape.radius, 32, 32)
+       // The shooting balls
+       const shootVelocity = 15
+       const ballShape = new CANNON.Sphere(0.2)
+       const ballGeometry = new THREE.SphereBufferGeometry(ballShape.radius, 32, 32)
 
-        // Returns a vector pointing the the diretion the camera is at
-        function getShootDirection() {
-          const vector = new THREE.Vector3(0, 0, 1)
-          vector.unproject(camera)
-          const ray = new THREE.Ray(sphereBody.position, vector.sub(sphereBody.position).normalize())
-          return ray.direction
-        }
+       // Returns a vector pointing the the diretion the camera is at
+       function getShootDirection() {
+         const vector = new THREE.Vector3(0, 0, 1)
+         vector.unproject(camera)
+         const ray = new THREE.Ray(sphereBody.position, vector.sub(sphereBody.position).normalize())
+         return ray.direction
+       }
 
-        window.addEventListener('click', (event) => {
-          if (!controls.enabled) {
-            return
-          }
+       window.addEventListener('click', (event) => {
+         if (!controls.enabled) {
+           return
+         }
 
-          const ballBody = new CANNON.Body({ mass: 1 })
-          ballBody.addShape(ballShape)
-          const ballMesh = new THREE.Mesh(ballGeometry, material)
+         const ballBody = new CANNON.Body({ mass: 1 })
+         ballBody.addShape(ballShape)
+         const ballMesh = new THREE.Mesh(ballGeometry, material)
 
-          ballMesh.castShadow = true
-          ballMesh.receiveShadow = true
+         ballMesh.castShadow = true
+         ballMesh.receiveShadow = true
 
-          world.addBody(ballBody)
-          scene.add(ballMesh)
-          balls.push(ballBody)
-          ballMeshes.push(ballMesh)
+         world.addBody(ballBody)
+         scene.add(ballMesh)
+         balls.push(ballBody)
+         ballMeshes.push(ballMesh)
 
-          const shootDirection = getShootDirection()
-          ballBody.velocity.set(
-            shootDirection.x * shootVelocity,
-            shootDirection.y * shootVelocity,
-            shootDirection.z * shootVelocity
-          )
+         const shootDirection = getShootDirection()
+         ballBody.velocity.set(
+           shootDirection.x * shootVelocity,
+           shootDirection.y * shootVelocity,
+           shootDirection.z * shootVelocity
+         )
 
-          // Move the ball outside the player sphere
-          const x = sphereBody.position.x + shootDirection.x * (sphereShape.radius * 1.02 + ballShape.radius)
-          const y = sphereBody.position.y + shootDirection.y * (sphereShape.radius * 1.02 + ballShape.radius)
-          const z = sphereBody.position.z + shootDirection.z * (sphereShape.radius * 1.02 + ballShape.radius)
-          ballBody.position.set(x, y, z)
-          ballMesh.position.copy(ballBody.position)
-        })
-      }
+         // Move the ball outside the player sphere
+         const x = sphereBody.position.x + shootDirection.x * (sphereShape.radius * 1.02 + ballShape.radius)
+         const y = sphereBody.position.y + shootDirection.y * (sphereShape.radius * 1.02 + ballShape.radius)
+         const z = sphereBody.position.z + shootDirection.z * (sphereShape.radius * 1.02 + ballShape.radius)
+         ballBody.position.set(x, y, z)
+         ballMesh.position.copy(ballBody.position)
+       })
+     }
 
-      function initPointerLock() {
-        controls = new PointerLockControlsCannon(camera, sphereBody)
-        scene.add(controls.getObject())
+     function initPointerLock() {
+       controls = new PointerLockControlsCannon(camera, sphereBody)
+       scene.add(controls.getObject())
 
-        instructions.addEventListener('click', () => {
-          controls.lock()
-        })
+       instructions.addEventListener('click', () => {
+         controls.lock()
+       })
 
-        controls.addEventListener('lock', () => {
-          controls.enabled = true
-          instructions.style.display = 'none'
-        })
+       controls.addEventListener('lock', () => {
+         controls.enabled = true
+         instructions.style.display = 'none'
+       })
 
-        controls.addEventListener('unlock', () => {
-          controls.enabled = false
-          instructions.style.display = null
-        })
-      }
+       controls.addEventListener('unlock', () => {
+         controls.enabled = false
+         instructions.style.display = null
+       })
+     }
 
-      function animate() {
-        requestAnimationFrame(animate)
+     function animate() {
+       requestAnimationFrame(animate)
 
-        const time = performance.now() / 1000
-        const dt = time - lastCallTime
-        lastCallTime = time
+       const time = performance.now() / 1000
+       const dt = time - lastCallTime
+       lastCallTime = time
 
-        if (controls.enabled) {
-          world.step(timeStep, dt)
+       if (controls.enabled) {
+         world.step(timeStep, dt)
 
-          // Update ball positions
-          for (let i = 0; i < balls.length; i++) {
-            ballMeshes[i].position.copy(balls[i].position)
-            ballMeshes[i].quaternion.copy(balls[i].quaternion)
-          }
+         // Update ball positions
+         for (let i = 0; i < balls.length; i++) {
+           ballMeshes[i].position.copy(balls[i].position)
+           ballMeshes[i].quaternion.copy(balls[i].quaternion)
+         }
 
-          // Update box positions
-          for (let i = 0; i < voxels.boxes.length; i++) {
-            boxMeshes[i].position.copy(voxels.boxes[i].position)
-            boxMeshes[i].quaternion.copy(voxels.boxes[i].quaternion)
-          }
-        }
+         // Update box positions
+         for (let i = 0; i < voxels.boxes.length; i++) {
+           objects[i].position.copy(voxels.boxes[i].position)
+           objects[i].quaternion.copy(voxels.boxes[i].quaternion)
+         }
+       }
 
-        controls.update(dt)
-        renderer.render(scene, camera)
-        stats.update()
-      }
-      */
+       controls.update(dt)
+       renderer.render(scene, camera)
+       stats.update()
+     }
+     */
 
-function addVoxel (x, y, z, filled) {
+function addVoxel(x, y, z, filled) {
 
   const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
   const voxelBody = new CANNON.Body({
-   type: CANNON.Body.STATIC,
-   shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-   material: mainMaterial
+    type: CANNON.Body.STATIC,
+    shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+    material: mainMaterial
   })
 
   voxel.position.set(x, y, z)
@@ -534,60 +519,102 @@ function addVoxel (x, y, z, filled) {
   return voxelBody
 }
 
-function removeVoxel (x, y, z, type) {
-  
-    scene.remove(intersect.object)
+function removeVoxel(x, y, z, type) {
 
-    objects.splice(objects.indexOf(intersect.object), 1)
+  scene.remove(intersect.object)
 
-    world.removeBody(intersect.object.position)
-  }
+  objects.splice(objects.indexOf(intersect.object), 1)
+
+  world.removeBody(intersect.object.position)
+}
 
 
 /**
  * World Generation
  */
-function generateWorld(x, y, z){
-x *= 5
-y *= 5
-z *= 5
+function generateWorld(x, y, z) {
+  if (filled) {
 
-let filled = true
-if(noise.simplex3(x / 100, y / 100, z / 100) <= 0){
-  filled = false
-}
+    const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
-  if (filled){
+    const voxelBody = new CANNON.Body({
+      type: CANNON.Body.STATIC,
+      shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+      material: mainMaterial
+    })
 
-  const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+    voxel.position.set(x, y, z)
+    voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+    scene.add(voxel)
 
-  const voxelBody = new CANNON.Body({
-   type: CANNON.Body.STATIC,
-   shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-   material: mainMaterial
-  })
+    objects.push(voxel)
 
-  voxel.position.set(x,y,z)
-  voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-  scene.add(voxel)
+    //Voxel Mesh Merge
+    voxelBody.position.copy(voxel.position)
+    voxelBody.quaternion.copy(voxel.quaternion)
 
-  objects.push(voxel)
-
-  //Voxel Mesh Merge
-  voxelBody.position.copy(voxel.position)
-  voxelBody.quaternion.copy(voxel.quaternion)
-
-  world.addBody(voxelBody)
-} 
+    world.addBody(voxelBody)
+  }
 }
 
 //Generation Parameters
 noise.seed(Math.random());
-for (let z = -30; z < 30; z++){
-  for (let x = -30; x < 30; x++) {
-    for (let y = -2; y < 0; y++) {
-    generateWorld(x, y, z)
-}}}
+
+
+// Number of voxels
+const nx = 100
+const ny = 10
+const nz = 100
+
+// Scale of voxels
+const sx = 5
+const sy = 5
+const sz = 5
+
+// Generic material
+let material = new THREE.MeshLambertMaterial({ color: 0xdddddd })
+const boxes = []
+
+// Voxels
+let voxels = new VoxelLandscape(world, nx, ny, nz, sx, sy, sz)
+
+for (let i = 0; i < nx; i++) {
+  for (let j = 0; j < ny; j++) {
+    for (let k = 0; k < nz; k++) {
+      let filled = true
+
+      // Insert map constructing logic here
+      if (Math.sin(i * 0.1) * Math.sin(k * 0.1) < (j / ny) * 2 - 1) {
+        filled = false
+      }
+      //other generation function
+      /*
+      if (noise.simplex3(i / 100, k / 100, j / 100) <= 0) {
+        filled = false
+      }
+      */
+
+      voxels.setFilled(i, j, k, filled)
+    }
+  }
+}
+
+voxels.update()
+
+console.log(voxels)
+
+// Voxel meshes
+for (let i = 0; i < voxels.boxes.length; i++) {
+  const box = voxels.boxes[i]
+  const voxelGeometry = new THREE.BoxGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
+  const voxelMesh = new THREE.Mesh(voxelGeometry, material)
+  voxelMesh.castShadow = true
+  voxelMesh.receiveShadow = true
+  objects.push(voxelMesh)
+  scene.add(voxelMesh)
+}
+
+
 
 /**
  * Renderer
@@ -605,7 +632,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 // Create the user collision
 const playerShape = new CANNON.Box(new CANNON.Vec3(1, 2, 1))
 const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial })
-playerBody.position.set(0, 10, 0)
+playerBody.position.set(10, 100, 10)
 world.addBody(playerBody)
 
 const controls = new PointerLockControlsCannon(camera, playerBody)
@@ -636,9 +663,10 @@ const tick = () => {
   time = currentTime
   //delta time is miliseconds per frame
 
-  //Grid vertex changes
-  //plane.geometry.attributes.position.array[(Math.floor(((plane.geometry.attributes.position.array.length - 1) * Math.random())))] -= Math.sin(Math.random() / 10)
-  //plane.geometry.attributes.position.needsUpdate = true
+  for (let i = 0; i < voxels.boxes.length; i++) {
+    objects[i].position.copy(voxels.boxes[i].position)
+    objects[i].quaternion.copy(voxels.boxes[i].quaternion)
+  }
 
   //Physics (1 for the 3rd parameter makes it faster but lower quality)
   world.step(timeStep, deltaTime, 1)
