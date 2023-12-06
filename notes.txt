@@ -6,3 +6,95 @@ cd whatever = to go to whatever
 ls = check inside folder
 
 TODO:
+
+
+
+
+UNUSED CODE BLOCKS
+/*Asset loader
+const assetLoader = new GLTFLoader()
+const monkeyUrl = new URL('../public/assets/monkey.glb', import.meta.url)
+assetLoader.load(monkeyUrl.href, function (gltf) {
+    const model = gltf.scene
+    scene.add(model)
+    model.position.set(0, 0, 0)
+}, undefined, function (error) {
+    console.error(error)
+})
+*/
+
+/*
+//Directional Light Helpers
+const dLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5)
+scene.add(dLightHelper)
+dLightHelper.update()
+const dLightShadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera)
+scene.add(dLightShadowHelper)
+dLightShadowHelper.update()
+*/
+
+
+  //camera.position.copy(playerBody.position)
+  /*
+  //Translates mouse position into 3d co-ords
+  var vec = new THREE.Vector3()
+  var pos = new THREE.Vector3()
+
+  vec.set(( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 )
+  
+  vec.unproject( camera )
+ 
+  vec.sub( camera.position ).normalize()
+  
+  var distance = - camera.position.z / vec.z;
+  
+  pos.copy( camera.position ).add( vec.multiplyScalar( distance ) )
+
+  console.log(camera.position)
+  console.log(pos)
+  console.log(playerBody.position)
+  
+  const raycast = new CANNON.Ray(pos, camera.position)
+
+  console.log(raycast)
+  const rayOptions = { from: pos, mode: 1, result: raycastResult, to: camera.position }
+  var raycastResult = new CANNON.RaycastResult()
+  const cannonIntersects = raycast.intersectWorld(world, rayOptions)
+  */
+
+
+
+//const cannonIntersect = raycastResult[0]
+
+
+  //world.removeBody(cannonIntersect)
+
+
+
+
+
+
+  function generateWorld(x, y, z) {
+  if (filled) {
+
+    const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+
+    const voxelBody = new CANNON.Body({
+      type: CANNON.Body.STATIC,
+      shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+      material: mainMaterial
+    })
+
+    voxel.position.set(x, y, z)
+    voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+    scene.add(voxel)
+
+    objects.push(voxel)
+
+    //Voxel Mesh Merge
+    voxelBody.position.copy(voxel.position)
+    voxelBody.quaternion.copy(voxel.quaternion)
+
+    world.addBody(voxelBody)
+  }
+}
