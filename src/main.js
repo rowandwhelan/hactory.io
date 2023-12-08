@@ -72,7 +72,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Physics
  */
 const world = new CANNON.World({
-  gravity: new CANNON.Vec3(0, -9.81, 0)
+  gravity: new CANNON.Vec3(0, -20, 0)
 })
 
 const solver = new CANNON.GSSolver()
@@ -83,6 +83,8 @@ world.solver = new CANNON.SplitSolver(solver)
 world.defaultContactMaterial.contactEquationStiffness = 1e9
 // Stabilization time in number of timesteps
 world.defaultContactMaterial.contactEquationRelaxation = 4
+world.broadphase = new CANNON.NaiveBroadphase();
+world.broadphase.useBoundingBoxes = true;
 
 const mainMaterial = new CANNON.Material()
 const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
@@ -167,8 +169,6 @@ const objects = []
 
 //Dirt block
 const map = new THREE.TextureLoader().load(stone)
-const cubeGeo = new THREE.BoxGeometry(5, 5, 5)
-const cubeMat = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
 
 //Placeholder block
 const placeholderGeo = new THREE.BoxGeometry(5, 5, 5)
@@ -190,7 +190,7 @@ function onMouseMove(event) {
     const intersect = intersects[0]
     placeholderMesh.visible = false
 
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(playerBody.position.y / 15)) && intersect.distance <= 10))) {
+    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15)-1 == Math.floor(playerBody.position.y / 15)-1) && intersect.distance <= 10))) {
       placeholderMesh.visible = true
       placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
 
@@ -213,10 +213,10 @@ function onMouseDown(event) {
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
-
+    
     // delete cube
 
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(playerBody.position.y / 15)) && intersect.distance <= 10))) {
+    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15)-1 == Math.floor(playerBody.position.y / 15)-1) && intersect.distance <= 10))) {
 
       if (event.button == 2) {
 
@@ -227,7 +227,7 @@ function onMouseDown(event) {
         // create cube
 
       } else {
-
+        /*
         const voxel = new THREE.Mesh(cubeGeo, cubeMat)
 
         const voxelBody = new CANNON.Body({
@@ -237,15 +237,31 @@ function onMouseDown(event) {
         })
 
         voxel.position.copy(intersect.point).add(intersect.face.normal)
+        //
+        //voxels.update()
         voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
         scene.add(voxel)
         objects.push(voxel)
+        */
+        
+        var bro = new THREE.Vector3()
+        bro.copy(intersect.point).add(intersect.face.normal)
+        voxels.setFilled(Math.floor((Math.floor(bro.x/5)-1), (Math.floor(bro.y/5)-1), (Math.floor(bro.z/5)-1)), false)
+        
+        //voxels.update()
+        const box = voxels.boxes[voxels.getBoxIndex((Math.floor(bro.x/5)-1), (Math.floor(bro.y/5)-1), (Math.floor(bro.z/5)-1))]
+        const voxelGeometry = new THREE.BoxGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
+        const voxelMesh = new THREE.Mesh(voxelGeometry, material)
+        voxelMesh.castShadow = true
+        voxelMesh.receiveShadow = true
+        objects.push(voxelMesh)
+        scene.add(voxelMesh)
 
         //Voxel Mesh Merge
-        voxelBody.position.copy(voxel.position)
-        voxelBody.quaternion.copy(voxel.quaternion)
+        //voxelBody.position.copy(voxel.position)
+        //voxelBody.quaternion.copy(voxel.quaternion)
 
-        world.addBody(voxelBody)
+        //world.addBody(voxelBody)
       }
 
       renderer.render(scene, camera)
@@ -257,9 +273,9 @@ function onMouseDown(event) {
  * World Generation
  */
 // Number of voxels
-const nx = 100
-const ny = 10
-const nz = 100
+const nx = 80
+const ny = 8
+const nz = 80
 
 // Scale of voxels
 const sx = 5
@@ -267,7 +283,7 @@ const sy = 5
 const sz = 5
 
 // Generic voxel material
-let material = new THREE.MeshLambertMaterial({ color: 0x00ff00 })
+let material = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
 
 let voxels = new VoxelLandscape(world, nx, ny, nz, sx, sy, sz)
 
@@ -279,7 +295,7 @@ for (let i = 0; i < nx; i++) {
       let filled = true
 
       // Map generation logic
-      if (noise.simplex3(i / 100, k / 100, j / 100) <= 0) {
+      if (noise.simplex3(i / 100, k / 100, j / 100) <= -0.2) {
         filled = false
       }
       /* //alternate map generation
@@ -287,7 +303,6 @@ for (let i = 0; i < nx; i++) {
         filled = false
       }
       */
-
       voxels.setFilled(i, j, k, filled)
     }
   }
