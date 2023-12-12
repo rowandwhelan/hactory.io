@@ -179,80 +179,6 @@ scene.add(placeholderMesh)
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 
-function onMouseMove(event) {
-
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
-  raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
-
-  if (intersects.length > 0) {
-
-    const intersect = intersects[0]
-    placeholderMesh.visible = false
-
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(playerBody.position.y / 15)) && intersect.distance <= 10))) {
-      placeholderMesh.visible = true
-      placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
-
-      //Moves placeholder mesh
-      placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
-      placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-
-      renderer.render(scene, camera)
-    }
-  }
-}
-
-function onMouseDown(event) {
-
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
-
-  raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
-
-  if (intersects.length > 0) {
-
-    const intersect = intersects[0]
-
-    // delete cube
-
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(playerBody.position.y / 15)) && intersect.distance <= 10))) {
-
-      if (event.button == 2) {
-
-        scene.remove(intersect.object)
-
-        objects.splice(objects.indexOf(intersect.object), 1)
-
-        // create cube
-
-      } else {
-
-        const voxel = new THREE.Mesh(cubeGeo, cubeMat)
-
-        const voxelBody = new CANNON.Body({
-          type: CANNON.Body.STATIC,
-          shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-          material: mainMaterial
-        })
-
-        voxel.position.copy(intersect.point).add(intersect.face.normal)
-        voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-        scene.add(voxel)
-        objects.push(voxel)
-
-        //Voxel Mesh Merge
-        voxelBody.position.copy(voxel.position)
-        voxelBody.quaternion.copy(voxel.quaternion)
-
-        world.addBody(voxelBody)
-      }
-
-      renderer.render(scene, camera)
-    }
-  }
-}
-
 /**
  * World Generation
  */
@@ -304,6 +230,89 @@ for (let i = 0; i < voxels.boxes.length; i++) {
   voxelMesh.receiveShadow = true
   objects.push(voxelMesh)
   scene.add(voxelMesh)
+}
+
+/**
+ * Voxel Interaction
+ */
+function onMouseMove(event) {
+
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(objects, false)
+
+  if (intersects.length > 0) {
+
+    const intersect = intersects[0]
+    placeholderMesh.visible = false
+
+    if (intersect.distance <= maxReach) {
+      placeholderMesh.visible = true
+      if (intersect.distance > 10){
+      placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
+      } else if (intersect.distance <= 10){
+        placeholderMaterial.opacity = intersect.distance*1.5 / maxReach
+      }
+
+      //Moves placeholder mesh
+      placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
+      placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+
+      renderer.render(scene, camera)
+    }
+  }
+}
+
+function onMouseDown(event) {
+
+  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
+
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(objects, false)
+
+  if (intersects.length > 0) {
+
+    const intersect = intersects[0]
+
+    // delete cube
+
+      if (event.button == 2) {
+
+        //scene.remove(intersect.object)
+
+        //objects.splice(objects.indexOf(intersect.object), 1)
+
+        console.log(voxels.isFilled(intersect.point.x, intersect.point.y, intersect.point.z))
+        voxels.update()
+
+        // create cube
+
+      } else {
+
+        if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(intersect.point.y / 15)) && intersect.distance <= 10))) {
+        const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+
+        const voxelBody = new CANNON.Body({
+          type: CANNON.Body.STATIC,
+          shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+          material: mainMaterial
+        })
+
+        voxel.position.copy(intersect.point).add(intersect.face.normal)
+        voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+        scene.add(voxel)
+        objects.push(voxel)
+
+        //Voxel Mesh Merge
+        voxelBody.position.copy(voxel.position)
+        voxelBody.quaternion.copy(voxel.quaternion)
+
+        world.addBody(voxelBody)
+      }
+
+      renderer.render(scene, camera)
+    }
+  }
 }
 
 /**

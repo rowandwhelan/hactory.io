@@ -84,7 +84,7 @@ class VoxelLandscape {
 
     // Remove all old boxes
     for (let i = 0; i < this.boxes.length; i++) {
-      world.removeBody(this.boxes[i])
+      this.world.removeBody(this.boxes[i])
     }
     this.boxes.length = 0
 
