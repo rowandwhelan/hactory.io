@@ -16,6 +16,14 @@ import posx from '../public/assets/skybox/posx.jpg'
 import posy from '../public/assets/skybox/posy.jpg'
 import posz from '../public/assets/skybox/posz.jpg'
 
+/**  _______  ________ ________ __     __ ______
+ *  //======\ ||====== ===||=== ||     || ||=====\\
+ *  ||______  ||______    ||    ||     || ||_____||  
+ *  \\=====\\ ||======    ||    ||     || ||=====-'
+ *   ______|| ||______    ||    ||_____|| ||
+ *  \======// ||======    ||    \\=====// ||
+*/
+
 /**
  * Base
  */
@@ -179,8 +187,6 @@ scene.add(placeholderMesh)
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 
-<<<<<<< HEAD
-=======
 function onMouseMove(event) {
 
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
@@ -271,7 +277,6 @@ function onMouseDown(event) {
   }
 }
 
->>>>>>> d0630ec553141c5d23a4fc3f9b432c6b7644afc4
 /**
  * World Generation
  */
