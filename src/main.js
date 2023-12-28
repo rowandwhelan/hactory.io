@@ -16,6 +16,14 @@ import posx from '../public/assets/skybox/posx.jpg'
 import posy from '../public/assets/skybox/posy.jpg'
 import posz from '../public/assets/skybox/posz.jpg'
 
+/**  _______  ________ ________ __     __ ______
+ *  //======\ ||====== ===||=== ||     || ||=====\\
+ *  ||______  ||______    ||    ||     || ||_____||  
+ *  \\=====\\ ||======    ||    ||     || ||=====-'
+ *   ______|| ||______    ||    ||_____|| ||
+ *  \======// ||======    ||    \\=====// ||
+*/
+
 /**
  * Base
  */
