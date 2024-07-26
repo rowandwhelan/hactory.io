@@ -19,13 +19,8 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     this.jumpVelocity = 15
     //Default jumpVelocity is 20
 
-    this.pitchObject = new THREE.Object3D()
-    this.pitchObject.add(camera)
-
-    this.yawObject = new THREE.Object3D()
-    //How high up you clip though blocks
-    this.yawObject.position.y = 0
-    this.yawObject.add(this.pitchObject)
+    this.camera = new THREE.Object3D().add(camera)
+    this.cameraEuler = new THREE.Euler(0,0,0,'YXZ')
 
     this.quaternion = new THREE.Quaternion()
 
@@ -120,12 +115,12 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     }
 
     const { movementX, movementY } = event
-
-    //movement sensitivity, default 0.002
-    this.yawObject.rotation.y -= movementX * 0.004 
-    this.pitchObject.rotation.x -= movementY * 0.00225 * 0
-
-    this.pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitchObject.rotation.x))
+    this.camera.position.set(0, 0, 0)
+    this.cameraEuler.x -= movementY * 0.00225
+    this.cameraEuler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.cameraEuler.x))
+    this.cameraEuler.y -= movementX * 0.00225
+    this.camera.setRotationFromEuler(this.cameraEuler)
+    this.camera.position.set(0, 6, 0)
   }
 
   onKeyDown = (event) => {
@@ -184,7 +179,7 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
   }
 
   getObject() {
-    return this.yawObject
+    return this.camera
   }
 
   getDirection() {
@@ -215,17 +210,14 @@ class PointerLockControlsCannon extends THREE.EventDispatcher {
     }
 
     // Convert velocity to world coordinates
-    this.euler.x = this.pitchObject.rotation.x
-    this.euler.y = this.yawObject.rotation.y
-    this.euler.order = 'XYZ'
-    this.quaternion.setFromEuler(this.euler)
+    this.quaternion.setFromEuler(this.cameraEuler)
     this.inputVelocity.applyQuaternion(this.quaternion)
 
     // Add to the object
     this.velocity.x += this.inputVelocity.x
     this.velocity.z += this.inputVelocity.z
 
-    this.yawObject.position.copy(this.cannonBody.position)
+    this.camera.position.copy(this.cannonBody.position)
   }
 }
 

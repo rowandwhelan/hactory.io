@@ -8,11 +8,12 @@
   
   <style>
   </style>
-  <script type="module" crossorigin src="./assets/index-d0776641.js"></script>
+  <script type="module" crossorigin src="./assets/index-789c09aa.js"></script>
   <link rel="stylesheet" href="./assets/index-6635bf9e.css">
 </head>
 
 <body>
+  <div id="container"></div>
   <canvas class = 'webgl'></canvas>
   <script id = "vertexShader" type = "vertex">
     void main() {
@@ -24,13 +25,17 @@
       gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
   }
   </script>
+  <script src='./perlin.js'></script>
   
+
   
+
+
+  <canvas></canvas>
   <!-- 
 
      <script src="/socket.io/socket.io.js"></script>
-   // canvas 
-  <canvas></canvas>
+
   // Server JS code 
   <script> src = "../../server/server.js" </script>
  // Client JS code 
