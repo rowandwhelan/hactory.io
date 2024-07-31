@@ -36,7 +36,8 @@ const scene = new THREE.Scene()
 //Camera
 let camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 5000)
 //position of camera above ground relative to the player body
-camera.position.set(0, 6, 0)
+camera.layers.enable(1)
+camera.position.set(0, 0, 0)
 
 /**
  * Textures
@@ -77,43 +78,6 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 /**
- * Physics
- */
-const world = new CANNON.World({
-  gravity: new CANNON.Vec3(0, -20, 0)
-})
-
-const solver = new CANNON.GSSolver()
-solver.iterations = 7
-solver.tolerance = 0.1
-world.solver = new CANNON.SplitSolver(solver)
-// Contact stiffness - use to make softer/harder contacts
-world.defaultContactMaterial.contactEquationStiffness = 1e9
-// Stabilization time in number of timesteps
-world.defaultContactMaterial.contactEquationRelaxation = 4
-world.broadphase = new CANNON.NaiveBroadphase();
-world.broadphase.useBoundingBoxes = true;
-
-const mainMaterial = new CANNON.Material()
-const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
-  friction: 0.00,
-  restitution: 0.3,
-})
-world.addContactMaterial(mainContactMat)
-
-// Create the user collision
-const playerShape = new CANNON.Box(new CANNON.Vec3(0.2, 2, 0.2))
-const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial, type: CANNON.Body.DYNAMIC })
-playerBody.position.set(10, 100, 10)
-world.addBody(playerBody)
-
-const controls = new PointerLockControlsCannon(camera, playerBody)
-//How far the player can reach
-let maxReach = 30
-scene.add(controls.getObject())
-controls.enabled = true
-
-/**
  * Lighting
  */
 //Ambient Light
@@ -139,10 +103,6 @@ scene.fog = new THREE.Fog(0xFFFFFF, 400, 600)
 /**
  * Event Listeners
  */
-document.addEventListener('mousemove', onMouseMove)
-document.addEventListener('mousedown', onMouseDown)
-document.addEventListener('keydown', onkeydown)
-document.addEventListener('keyup', onkeyup)
 
 window.addEventListener('resize', () => {
 
@@ -156,33 +116,204 @@ window.addEventListener('resize', () => {
   renderer.render(scene, camera)
 })
 
-//Horizontal camera movment (verticle movment in seperate file)
-document.addEventListener('mousemove', (event) => {
-  camera.rotation.x -= event.movementY * 0.00225
-  camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x))
-})
-
-window.addEventListener('click', (event) => {
-  if (!controls.enabled) {
-    return
-  }
-  document.body.requestPointerLock();
-})
 
 /**
  * Objects and Voxels
  */
-//Objects
-const objects = []
 
 //Dirt block
 const map = new THREE.TextureLoader().load(stone)
 
+// Generic voxel material
+let material = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
+
+
+//Chunk data (example)
+const chunkData = [
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+  [[[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]], [[1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1]]],
+];
+
+
+
+/**
+ * Physics
+ */
+const world = new CANNON.World({
+  gravity: new CANNON.Vec3(0, -9.8, 0)
+})
+
+const solver = new CANNON.GSSolver()
+solver.iterations = 7
+solver.tolerance = 0.1
+world.solver = new CANNON.SplitSolver(solver)
+// Contact stiffness - use to make softer/harder contacts
+world.defaultContactMaterial.contactEquationStiffness = 1e9
+// Stabilization time in number of timesteps
+world.defaultContactMaterial.contactEquationRelaxation = 1
+world.broadphase = new CANNON.NaiveBroadphase();
+//world.broadphase.useBoundingBoxes = true;
+
+
+const mainMaterial = new CANNON.Material()
+const mainContactMat = new CANNON.ContactMaterial(mainMaterial, mainMaterial, {
+  friction: 0.005,
+  restitution: 0.025,
+})
+world.addContactMaterial(mainContactMat)
+
+// Create the user collision
+const playerShape = new CANNON.Box(new CANNON.Vec3(1, 5, 1))
+const playerBody = new CANNON.Body({ mass: 70, shape: playerShape, linearDamping: 0.25, material: mainMaterial, type: CANNON.Body.DYNAMIC, collisionFilterGroup:2, collisionFilterMask:1 })
+playerBody.position.set(10, 100, 10)
+world.addBody(playerBody)
+
+
+/**
+ * Controls
+ */
+const controls = new PointerLockControlsCannon(camera, playerBody)
+controls.enabled = true
+//How far the player can reach
+let maxReach = 50
+
+scene.add(controls.getObject())
+
+window.addEventListener('click', (event) => {
+  if (!controls.enabled) {
+    //return
+  }
+  document.body.requestPointerLock();
+})
+
+
+
+
+
+// Voxel landscape meshes
+
+/**
+ *chunk loop
+ layer loop
+ row loop
+ block loop
+
+
+ *
+ * 
+ */
+
+const voxelGeometry = new THREE.BoxGeometry(5,5,5)
+
+for (let i = 0; i < chunkData.length; i++) { //which chunk
+  for (let j = 0; j < chunkData[i].length; j++){ //which layer
+    for (let k = 0; k < chunkData[i][j].length; k++){ //which row
+      for (let l = 0; l < chunkData[i][j][k].length; l++){ //which block
+        const voxelMesh = new THREE.Mesh(voxelGeometry, material)
+        voxelMesh.castShadow = true
+        voxelMesh.receiveShadow = true
+        //x y z
+        //chunk(x z)  layer-y    rows -----
+        /** Y/Layer 1
+         * 
+         *      
+         *    
+         *    topdown
+         *        |
+         *    x---------
+         *        |
+         *        |
+         *        z
+       * 
+       * y is vertical 
+       * 
+       * 
+       * ect
+       * row 2
+       * row 1: 1 2 3 4 5 6 7 8
+       * 
+       * same chunk layer:
+       * 
+       * chunk previous 0,0 + 8 x
+       * new chunk layer: 0,0 + 8 z
+       * 
+       * within chunk:
+       * new layer: chunk (0,0) + 1 y
+       * 
+       * within layer:
+       * chunk(0,0) + y (however many layers) + 1 z (for every row)
+       * 
+       * within row: 
+       * all above + (itteration) x
+       * 
+       * (x,y,z)
+       */                     
+        voxelMesh.position.set((i % 3)*8+k, j, (Math.floor(i/3)*8)+l)
+
+        //console.log(i, j, k, l)
+        //console.log(chunkData[i][j][k][l])
+        voxelMesh.position.floor().multiplyScalar(5).addScalar(2.5)
+        scene.add(voxelMesh)
+        const voxelBody = new CANNON.Body({
+          type: CANNON.Body.STATIC,
+          shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
+          material: mainMaterial
+        })
+        voxelBody.position.copy(voxelMesh.position)
+        voxelBody.quaternion.copy(voxelMesh.quaternion)
+        world.addBody(voxelBody)
+        
+      }
+    }
+  }
+}
+
+function remBlock(x,y,z,id) {
+  
+  scene.remove(scene.getObjectById(id))
+  //world.removeBody()
+}
+
+function addBlock (x,y,z) {
+
+}
+
+/**
+ * Break block:
+ * Find coords
+ * Intersect and remove body and mesh
+ * 
+ * 
+ * Place block:
+ * Find coords
+ * Intersect and add body and mesh
+ * Intersect and remove body and mesh
+ * 
+ * 
+ * 
+ */
+
+/**
+ * Voxel Interaction
+*/
+
+document.addEventListener('mousemove', onMouseMove)
+document.addEventListener('mousedown', onMouseDown)
+
 //Placeholder block
 const placeholderGeo = new THREE.BoxGeometry(5, 5, 5)
-let placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
+let placeholderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true })
 let placeholderMesh = new THREE.Mesh(placeholderGeo, placeholderMaterial)
 scene.add(placeholderMesh)
+placeholderMesh.layers.enable(1)
+placeholderMesh.layers.disable(0)
 
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
@@ -191,160 +322,18 @@ function onMouseMove(event) {
 
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
   raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
+  
+  raycaster.layers.set( 0 );
+  //object.layers.enable( 1 );
+  const intersects = raycaster.intersectObjects(scene.children, false)
+
 
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
-    placeholderMesh.visible = false
-
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15)-1 == Math.floor(playerBody.position.y / 15)-1) && intersect.distance <= 10))) {
-      placeholderMesh.visible = true
-      placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
-
-      //Moves placeholder mesh
-      placeholderMesh.position.copy(intersect.point).add(intersect.face.normal)
-      placeholderMesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-
-      renderer.render(scene, camera)
-    }
-  }
-}
-
-function onMouseDown(event) {
-
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
-
-  raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
-
-  if (intersects.length > 0) {
-
-    const intersect = intersects[0]
-    
-    // delete cube
-
-    if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15)-1 == Math.floor(playerBody.position.y / 15)-1) && intersect.distance <= 10))) {
-
-      if (event.button == 2) {
-
-        scene.remove(intersect.object)
-
-        objects.splice(objects.indexOf(intersect.object), 1)
-
-        // create cube
-
-      } else {
-        /*
-        const voxel = new THREE.Mesh(cubeGeo, cubeMat)
-
-        const voxelBody = new CANNON.Body({
-          type: CANNON.Body.STATIC,
-          shape: new CANNON.Box(new CANNON.Vec3(5, 5, 5)),
-          material: mainMaterial
-        })
-
-        voxel.position.copy(intersect.point).add(intersect.face.normal)
-        //
-        //voxels.update()
-        voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
-        scene.add(voxel)
-        objects.push(voxel)
-        */
-        
-        var bro = new THREE.Vector3()
-        bro.copy(intersect.point).add(intersect.face.normal)
-        voxels.setFilled(Math.floor((Math.floor(bro.x/5)-1), (Math.floor(bro.y/5)-1), (Math.floor(bro.z/5)-1)), false)
-        
-        //voxels.update()
-        const box = voxels.boxes[voxels.getBoxIndex((Math.floor(bro.x/5)-1), (Math.floor(bro.y/5)-1), (Math.floor(bro.z/5)-1))]
-        const voxelGeometry = new THREE.BoxGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
-        const voxelMesh = new THREE.Mesh(voxelGeometry, material)
-        voxelMesh.castShadow = true
-        voxelMesh.receiveShadow = true
-        objects.push(voxelMesh)
-        scene.add(voxelMesh)
-
-        //Voxel Mesh Merge
-        //voxelBody.position.copy(voxel.position)
-        //voxelBody.quaternion.copy(voxel.quaternion)
-
-        //world.addBody(voxelBody)
-      }
-
-      renderer.render(scene, camera)
-    }
-  }
-}
-
-/**
- * World Generation
- */
-// Number of voxels
-const nx = 80
-const ny = 8
-const nz = 80
-
-// Scale of voxels
-const sx = 5
-const sy = 5
-const sz = 5
-
-// Generic voxel material
-let material = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: map })
-
-let voxels = new VoxelLandscape(world, nx, ny, nz, sx, sy, sz)
-
-noise.seed(Math.random());
-
-for (let i = 0; i < nx; i++) {
-  for (let j = 0; j < ny; j++) {
-    for (let k = 0; k < nz; k++) {
-      let filled = true
-
-      // Map generation logic
-      if (noise.simplex3(i / 100, k / 100, j / 100) <= -0.2) {
-        filled = false
-      }
-      /* //alternate map generation
-      if (Math.sin(i * 0.1) * Math.sin(k * 0.1) < (j / ny) * 2 - 1) {
-        filled = false
-      }
-      */
-      voxels.setFilled(i, j, k, filled)
-    }
-  }
-}
-
-voxels.update()
-
-// Voxel landscape meshes
-for (let i = 0; i < voxels.boxes.length; i++) {
-  const box = voxels.boxes[i]
-  const voxelGeometry = new THREE.BoxGeometry(voxels.sx * box.nx, voxels.sy * box.ny, voxels.sz * box.nz)
-  const voxelMesh = new THREE.Mesh(voxelGeometry, material)
-  voxelMesh.castShadow = true
-  voxelMesh.receiveShadow = true
-  objects.push(voxelMesh)
-  scene.add(voxelMesh)
-}
-
-/**
- * Voxel Interaction
- */
-function onMouseMove(event) {
-
-  mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
-  raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
-
-  if (intersects.length > 0) {
-
-    const intersect = intersects[0]
-    placeholderMesh.visible = false
 
     if (intersect.distance <= maxReach) {
-      placeholderMesh.visible = true
+      
       if (intersect.distance > 10){
       placeholderMaterial.opacity = (maxReach * 1.5 - intersect.distance) / (maxReach * 1.5 - 0)
       } else if (intersect.distance <= 10){
@@ -365,29 +354,37 @@ function onMouseDown(event) {
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1)
 
   raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(objects, false)
+  const intersects = raycaster.intersectObjects(scene.children, false)
 
   if (intersects.length > 0) {
 
     const intersect = intersects[0]
 
+    let physicsRaycaster = new CANNON.Ray()
+    let physicsRaycasterResult = new CANNON.RaycastResult()
+    console.log(playerBody)
+    world.raycastClosest(playerBody.position, intersect.object.position, {collisionFilterMask:1, collisionFilterGroup:3, skipBackfaces:false, checkCollisionResponse:true}, physicsRaycasterResult)
+    console.log(physicsRaycasterResult)
+    console.log(world)
+
     // delete cube
 
       if (event.button == 2) {
-
+        //console.log(intersect.object)
+        remBlock(Math.floor(intersect.object.position.x/5), Math.floor(intersect.object.position.y/5), Math.floor(intersect.object.position.z/5), intersect.object.id)
         //scene.remove(intersect.object)
 
         //objects.splice(objects.indexOf(intersect.object), 1)
 
-        console.log(voxels.isFilled(intersect.point.x, intersect.point.y, intersect.point.z))
-        voxels.update()
-
-        // create cube
+      //create cube
 
       } else {
 
         if ((intersect.distance <= maxReach) && !(((Math.floor(intersect.point.y / 15) == Math.floor(intersect.point.y / 15)) && intersect.distance <= 10))) {
-        const voxel = new THREE.Mesh(cubeGeo, cubeMat)
+          //const voxelGeometry = new THREE.BoxGeometry(voxels.sx, voxels.sy, voxels.sz)
+        
+          const voxel = new THREE.Mesh(voxelGeometry, material)
+      
 
         const voxelBody = new CANNON.Body({
           type: CANNON.Body.STATIC,
@@ -396,9 +393,14 @@ function onMouseDown(event) {
         })
 
         voxel.position.copy(intersect.point).add(intersect.face.normal)
-        voxel.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5)
+
+        voxel.position.divideScalar(5).floor()
+        console.log(voxel.position.x, voxel.position.y, voxel.position.z, true)
+        //voxels.setFilled(voxel.position.x, voxel.position.y, voxel.position.z, true)
+        //voxels.update()
+        voxel.position.multiplyScalar(5).addScalar(2.5)
         scene.add(voxel)
-        objects.push(voxel)
+        //objects.push(voxel)
 
         //Voxel Mesh Merge
         voxelBody.position.copy(voxel.position)
@@ -411,6 +413,7 @@ function onMouseDown(event) {
     }
   }
 }
+
 
 /**
  * Animation Loop
@@ -431,10 +434,10 @@ const tick = () => {
   //delta time is miliseconds per frame
 
   //Voxel mesh merging
-  for (let i = 0; i < voxels.boxes.length; i++) {
-    objects[i].position.copy(voxels.boxes[i].position)
-    objects[i].quaternion.copy(voxels.boxes[i].quaternion)
-  }
+ // for (let i = 0; i < voxels.boxes.length; i++) {
+  //  objects[i].position.copy(voxels.boxes[i].position)
+  //  objects[i].quaternion.copy(voxels.boxes[i].quaternion)
+  //}
 
   //Physics (1 for the 3rd parameter makes it faster but lower quality)
   world.step(timeStep, deltaTime, 1)
